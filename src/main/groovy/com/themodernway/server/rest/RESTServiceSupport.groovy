@@ -21,8 +21,8 @@ import javax.servlet.http.HttpServletResponse
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Service
 
-import com.ait.tooling.common.api.java.util.StringOps
 import com.google.common.util.concurrent.RateLimiter
+import com.themodernway.common.api.java.util.StringOps;
 import com.themodernway.server.core.json.JSONObject
 import com.themodernway.server.core.json.schema.JSONSchema
 import com.themodernway.server.rest.support.RESTSupport

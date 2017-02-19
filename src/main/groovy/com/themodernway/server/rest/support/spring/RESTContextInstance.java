@@ -19,7 +19,7 @@ package com.themodernway.server.rest.support.spring;
 import java.util.List;
 import java.util.Objects;
 
-import com.ait.tooling.common.api.java.util.StringOps;
+import com.themodernway.common.api.java.util.StringOps;
 import com.themodernway.server.core.support.spring.ServerContextInstance;
 import com.themodernway.server.rest.IRESTService;
 

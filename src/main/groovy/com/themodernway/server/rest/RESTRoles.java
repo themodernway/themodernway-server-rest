@@ -19,7 +19,7 @@ package com.themodernway.server.rest;
 import java.util.Collection;
 import java.util.Objects;
 
-import com.ait.tooling.common.api.java.util.StringOps;
+import com.themodernway.common.api.java.util.StringOps;
 
 public final class RESTRoles
 {
