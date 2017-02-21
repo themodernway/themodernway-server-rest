@@ -297,7 +297,7 @@ public class RESTServlet extends HTTPServletBase
         {
             uroles = IServerSessionHelper.SP_DEFAULT_ROLES_LIST;
         }
-        final AuthorizationResult resp = isAuthorized(service, uroles);
+        final AuthorizationResult resp = isAuthorized(request, session, service, uroles);
 
         if (false == resp.isAuthorized())
         {
@@ -454,7 +454,7 @@ public class RESTServlet extends HTTPServletBase
         response.setStatus(code);
 
         response.setContentType(CONTENT_TYPE_APPLICATION_JSON);
-        
+
         final PrintWriter writer = response.getWriter();
 
         writer.flush();

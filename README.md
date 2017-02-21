@@ -1,9 +1,9 @@
-The Modern Way Server SQL
+The Modern Way Server REST
 ======
 
-The Modern Way Server SQL is a package containing basic server JDBC support.
+The Modern Way Server SQL is a package containing basic server REST support.
 
-https://github.com/themodernway/themodernway-server-sql
+https://github.com/themodernway/themodernway-server-rest
 
 Downloading artifacts
 
@@ -13,7 +13,7 @@ Maven:
 ```xml
 <dependency>
   <groupId>com.themodernway</groupId>
-  <artifactId>themodernway-server-sql</artifactId>
+  <artifactId>themodernway-server-rest</artifactId>
   <version>1.0.0-RC3</version>
 </dependency>
 ```
@@ -21,18 +21,18 @@ Gradle:
 
 ```
 dependencies {
-    compile(group:'com.themodernway',name:'themodernway-server-sql',version:'1.0.0-RC3')
+    compile(group:'com.themodernway',name:'themodernway-server-rest',version:'1.0.0-RC3')
 }
 ```
 Javadoc URL:
 
-https://lienzo-core.com/documents/javadoc/themodernway-server-sql
+https://www.themodernway.com/documents/javadoc/themodernway-server-rest
 
 License:
 
 Copyright (c) 2017 The Modern Way. All rights reserved.
 
-The Modern Way Server SQL is released under version 2.0 of the Apache License.
+The Modern Way Server REST is released under version 2.0 of the Apache License.
 
 http://www.apache.org/licenses/LICENSE-2.0.html
 
