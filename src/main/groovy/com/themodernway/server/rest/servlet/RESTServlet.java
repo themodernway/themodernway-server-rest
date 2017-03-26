@@ -60,7 +60,7 @@ public class RESTServlet extends HTTPServletBase
     @Override
     public void doHead(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
-        doNoCache(response);
+        doNeverCache(request, response);
 
         response.setContentLength(0);
 
@@ -341,11 +341,11 @@ public class RESTServlet extends HTTPServletBase
             {
                 if (irpc)
                 {
-                    writeJSON(HttpServletResponse.SC_OK, response, new JSONObject("result", result), isStrict(strict));
+                    writeJSON(HttpServletResponse.SC_OK, request, response, new JSONObject("result", result), isStrict(strict));
                 }
                 else
                 {
-                    writeJSON(HttpServletResponse.SC_OK, response, result, isStrict(strict));
+                    writeJSON(HttpServletResponse.SC_OK, request, response, result, isStrict(strict));
                 }
             }
         }
@@ -353,7 +353,7 @@ public class RESTServlet extends HTTPServletBase
         {
             if (false == context.isClosed())
             {
-                writeJSON(e.getCode(), response, new JSONObject("error", new JSONObject("code", e.getCode()).set("reason", e.getReason())), isStrict(strict));
+                writeJSON(e.getCode(), request, response, new JSONObject("error", new JSONObject("code", e.getCode()).set("reason", e.getReason())), isStrict(strict));
             }
         }
         catch (Throwable e)
@@ -364,7 +364,7 @@ public class RESTServlet extends HTTPServletBase
 
             if (false == context.isClosed())
             {
-                writeJSON(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response, new JSONObject("error", new JSONObject("code", HttpServletResponse.SC_INTERNAL_SERVER_ERROR).set("reason", oops)), isStrict(strict));
+                writeJSON(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, request, response, new JSONObject("error", new JSONObject("code", HttpServletResponse.SC_INTERNAL_SERVER_ERROR).set("reason", oops)), isStrict(strict));
             }
         }
     }
@@ -447,9 +447,9 @@ public class RESTServlet extends HTTPServletBase
         return false;
     }
 
-    protected void writeJSON(final int code, final HttpServletResponse response, final JSONObject output, final boolean strict) throws IOException
+    protected void writeJSON(final int code, final HttpServletRequest request, final HttpServletResponse response, final JSONObject output, final boolean strict) throws IOException
     {
-        doNoCache(response);
+        doNeverCache(request, response);
 
         response.setStatus(code);
 

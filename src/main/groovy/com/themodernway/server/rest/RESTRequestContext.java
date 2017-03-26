@@ -29,7 +29,6 @@ import org.springframework.http.HttpMethod;
 import com.themodernway.common.api.java.util.StringOps;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.security.session.IServerSession;
-import com.themodernway.server.core.servlet.HTTPServletBase;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
@@ -227,13 +226,13 @@ public class RESTRequestContext implements IRESTRequestContext
     @Override
     public JSONObject getJSONHeaders()
     {
-        return HTTPServletBase.getJSONHeadersFromRequest(getServletRequest());
+        return getJSONHeadersFromRequest(getServletRequest());
     }
 
     @Override
     public JSONObject getJSONParameters()
     {
-        return HTTPServletBase.getJSONParametersFromRequest(getServletRequest());
+        return getJSONParametersFromRequest(getServletRequest());
     }
 
     @Override
@@ -269,5 +268,16 @@ public class RESTRequestContext implements IRESTRequestContext
     public IServerSession getSession()
     {
         return m_session;
+    }
+
+    @Override
+    public void setMaxContentTypeLength(int max)
+    {
+    }
+
+    @Override
+    public String getName()
+    {
+        return m_userid;
     }
 }

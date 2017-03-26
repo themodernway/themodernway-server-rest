@@ -26,9 +26,10 @@ import org.springframework.http.HttpMethod;
 
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.security.session.IServerSession;
+import com.themodernway.server.core.servlet.IServletCommonOperations;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 
-public interface IRESTRequestContext
+public interface IRESTRequestContext extends IServletCommonOperations
 {
     public IServerSession getSession();
 
