@@ -23,7 +23,7 @@ import org.springframework.http.HttpMethod;
 import com.themodernway.common.api.types.INamed;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.schema.JSONSchema;
-import com.themodernway.server.core.locking.IRateLimited;
+import com.themodernway.server.core.limiting.IRateLimited;
 
 public interface IRESTService extends INamed, IRateLimited, Closeable
 {
