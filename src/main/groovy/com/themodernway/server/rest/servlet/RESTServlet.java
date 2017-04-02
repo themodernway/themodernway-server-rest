@@ -17,7 +17,7 @@
 package com.themodernway.server.rest.servlet;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.OutputStream;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -27,10 +27,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.springframework.http.HttpMethod;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.themodernway.common.api.java.util.StringOps;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
-import com.themodernway.server.core.json.parser.JSONParser;
+import com.themodernway.server.core.json.binder.BinderType;
+import com.themodernway.server.core.json.binder.IBinder;
 import com.themodernway.server.core.security.AuthorizationResult;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.security.session.IServerSessionHelper;
@@ -42,11 +44,10 @@ import com.themodernway.server.rest.RESTRequestContext;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
+@SuppressWarnings("serial")
 public class RESTServlet extends HTTPServletBase
 {
-    private static final long   serialVersionUID = 8890049936686095786L;
-
-    private static final Logger logger           = Logger.getLogger(RESTServlet.class);
+    private static final Logger logger = Logger.getLogger(RESTServlet.class);
 
     public RESTServlet()
     {
@@ -108,7 +109,7 @@ public class RESTServlet extends HTTPServletBase
         }
         if (read)
         {
-            object = parseJSON(request, type);
+            object = parseBODY(request, type);
         }
         if (null == object)
         {
@@ -213,7 +214,7 @@ public class RESTServlet extends HTTPServletBase
         }
         IServerSession session = null;
 
-        List<String> uroles = IServerSessionHelper.SP_DEFAULT_ROLES_LIST;
+        List<String> uroles = getDefaultRoles(request);
 
         String userid = StringOps.toTrimOrNull(request.getHeader(X_USER_ID_HEADER));
 
@@ -295,7 +296,7 @@ public class RESTServlet extends HTTPServletBase
         }
         if ((null == uroles) || (uroles.isEmpty()))
         {
-            uroles = IServerSessionHelper.SP_DEFAULT_ROLES_LIST;
+            uroles = getDefaultRoles(request);
         }
         final AuthorizationResult resp = isAuthorized(request, session, service, uroles);
 
@@ -323,7 +324,7 @@ public class RESTServlet extends HTTPServletBase
 
             service.acquire();
 
-            final JSONObject result = service.execute(context, object);
+            JSONObject result = service.execute(context, object);
 
             final long fast = System.nanoTime() - time;
 
@@ -337,15 +338,23 @@ public class RESTServlet extends HTTPServletBase
             {
                 logger.info("calling service " + name + " took " + done + " ms's");
             }
+            if (null == result)
+            {
+                logger.error("service returned null JSON " + name);
+
+                result = new JSONObject();
+            }
+            result = clean(result);
+
             if (false == context.isClosed())
             {
                 if (irpc)
                 {
-                    writeJSON(HttpServletResponse.SC_OK, request, response, new JSONObject("result", result), isStrict(strict));
+                    writeBODY(HttpServletResponse.SC_OK, request, response, new JSONObject("result", result), isStrict(strict));
                 }
                 else
                 {
-                    writeJSON(HttpServletResponse.SC_OK, request, response, result, isStrict(strict));
+                    writeBODY(HttpServletResponse.SC_OK, request, response, result, isStrict(strict));
                 }
             }
         }
@@ -353,7 +362,7 @@ public class RESTServlet extends HTTPServletBase
         {
             if (false == context.isClosed())
             {
-                writeJSON(e.getCode(), request, response, new JSONObject("error", new JSONObject("code", e.getCode()).set("reason", e.getReason())), isStrict(strict));
+                writeBODY(e.getCode(), request, response, new JSONObject("error", new JSONObject("code", e.getCode()).set("reason", e.getReason())), isStrict(strict));
             }
         }
         catch (Throwable e)
@@ -364,9 +373,19 @@ public class RESTServlet extends HTTPServletBase
 
             if (false == context.isClosed())
             {
-                writeJSON(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, request, response, new JSONObject("error", new JSONObject("code", HttpServletResponse.SC_INTERNAL_SERVER_ERROR).set("reason", oops)), isStrict(strict));
+                writeBODY(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, request, response, new JSONObject("error", new JSONObject("code", HttpServletResponse.SC_INTERNAL_SERVER_ERROR).set("reason", oops)), isStrict(strict));
             }
         }
+    }
+
+    protected JSONObject clean(final JSONObject json)
+    {
+        return json;
+    }
+
+    protected List<String> getDefaultRoles(final HttpServletRequest request)
+    {
+        return IServerSessionHelper.SP_DEFAULT_ROLES_LIST;
     }
 
     protected boolean isStrict(String strict)
@@ -385,19 +404,37 @@ public class RESTServlet extends HTTPServletBase
         return false;
     }
 
-    protected JSONObject parseJSON(final HttpServletRequest request, final HttpMethod type)
+    protected JSONObject parseBODY(final HttpServletRequest request, final HttpMethod type)
     {
-        if (isMethodJSON(type))
+        if (type != HttpMethod.GET)
         {
             final int leng = request.getContentLength();
 
             if (leng > 0)
             {
-                final JSONParser parser = new JSONParser();
+                IBinder bind = null;
 
+                final String cont = StringOps.toTrimOrElse(request.getContentType(), CONTENT_TYPE_APPLICATION_JSON).toLowerCase();
+
+                if (cont.contains(CONTENT_TYPE_APPLICATION_JSON))
+                {
+                    bind = getServerContext().binder(BinderType.JSON);
+                }
+                else if ((cont.contains(CONTENT_TYPE_TEXT_XML)) || (cont.contains(CONTENT_TYPE_APPLICATION_XML)))
+                {
+                    bind = getServerContext().binder(BinderType.XML);
+                }
+                else if ((cont.contains(CONTENT_TYPE_TEXT_YAML)) || (cont.contains(CONTENT_TYPE_APPLICATION_YAML)))
+                {
+                    bind = getServerContext().binder(BinderType.YAML);
+                }
+                else
+                {
+                    bind = getServerContext().binder(BinderType.JSON);
+                }
                 try
                 {
-                    return parser.parse(request.getInputStream());
+                    return bind.bindJSON(request.getInputStream());
                 }
                 catch (ParserException e)
                 {
@@ -422,44 +459,71 @@ public class RESTServlet extends HTTPServletBase
         return new JSONObject();
     }
 
-    private boolean isMethodJSON(final HttpMethod type)
-    {
-        if (type == HttpMethod.GET)
-        {
-            return false;
-        }
-        if (type == HttpMethod.POST)
-        {
-            return true;
-        }
-        if (type == HttpMethod.PUT)
-        {
-            return true;
-        }
-        if (type == HttpMethod.PATCH)
-        {
-            return true;
-        }
-        if (type == HttpMethod.DELETE)
-        {
-            return true;
-        }
-        return false;
-    }
-
-    protected void writeJSON(final int code, final HttpServletRequest request, final HttpServletResponse response, final JSONObject output, final boolean strict) throws IOException
+    protected void writeBODY(final int code, final HttpServletRequest request, final HttpServletResponse response, JSONObject output, final boolean strict) throws IOException
     {
         doNeverCache(request, response);
 
         response.setStatus(code);
 
-        response.setContentType(CONTENT_TYPE_APPLICATION_JSON);
+        IBinder bind = null;
 
-        final PrintWriter writer = response.getWriter();
+        final String cont = StringOps.toTrimOrElse(request.getHeader(ACCEPT), CONTENT_TYPE_APPLICATION_JSON).toLowerCase();
 
-        writer.flush();
+        if (cont.contains(CONTENT_TYPE_APPLICATION_JSON))
+        {
+            response.setContentType(CONTENT_TYPE_APPLICATION_JSON);
 
-        output.writeJSONString(writer, strict);
+            bind = getServerContext().binder(BinderType.JSON);
+        }
+        else if (cont.contains(CONTENT_TYPE_TEXT_XML))
+        {
+            output = new JSONResult(output);
+
+            response.setContentType(CONTENT_TYPE_TEXT_XML);
+
+            bind = getServerContext().binder(BinderType.XML);
+        }
+        else if (cont.contains(CONTENT_TYPE_APPLICATION_XML))
+        {
+            output = new JSONResult(output);
+
+            response.setContentType(CONTENT_TYPE_APPLICATION_XML);
+
+            bind = getServerContext().binder(BinderType.XML);
+        }
+        else if (cont.contains(CONTENT_TYPE_TEXT_YAML))
+        {
+            response.setContentType(CONTENT_TYPE_TEXT_YAML);
+
+            bind = getServerContext().binder(BinderType.YAML);
+        }
+        else if (cont.contains(CONTENT_TYPE_APPLICATION_YAML))
+        {
+            response.setContentType(CONTENT_TYPE_APPLICATION_YAML);
+
+            bind = getServerContext().binder(BinderType.YAML);
+        }
+        else
+        {
+            response.setContentType(CONTENT_TYPE_APPLICATION_JSON);
+
+            bind = getServerContext().binder(BinderType.JSON);
+        }
+        bind = bind.setStrict(strict);
+
+        final OutputStream stream = response.getOutputStream();
+
+        stream.flush();
+
+        try
+        {
+            bind.send(stream, output);
+        }
+        catch (ParserException e)
+        {
+            throw new IOException(e);
+        }
+        stream.flush();
     }
 
     protected final IRESTContext getRESTContext()
@@ -477,5 +541,14 @@ public class RESTServlet extends HTTPServletBase
             return;
         }
         super.service(request, response);
+    }
+
+    @JacksonXmlRootElement(localName = "result")
+    protected static class JSONResult extends JSONObject
+    {
+        public JSONResult(final JSONObject object)
+        {
+            super(object);
+        }
     }
 }
