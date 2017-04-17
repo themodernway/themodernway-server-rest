@@ -24,19 +24,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.log4j.Logger;
 import org.springframework.http.HttpMethod;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
-import com.themodernway.common.api.java.util.StringOps;
+import com.themodernway.server.core.NanoTimer;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
 import com.themodernway.server.core.json.binder.BinderType;
-import com.themodernway.server.core.json.binder.IBinder;
 import com.themodernway.server.core.security.AuthorizationResult;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.security.session.IServerSessionHelper;
-import com.themodernway.server.core.security.session.IServerSessionRepository;
 import com.themodernway.server.core.servlet.HTTPServletBase;
 import com.themodernway.server.rest.IRESTService;
 import com.themodernway.server.rest.RESTException;
@@ -47,8 +43,6 @@ import com.themodernway.server.rest.support.spring.RESTContextInstance;
 @SuppressWarnings("serial")
 public class RESTServlet extends HTTPServletBase
 {
-    private static final Logger logger = Logger.getLogger(RESTServlet.class);
-
     public RESTServlet()
     {
     }
@@ -99,84 +93,38 @@ public class RESTServlet extends HTTPServletBase
 
     protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject object) throws ServletException, IOException
     {
-        if (false == isRunning())
-        {
-            logger.error("server is suspended, refused request");
+        String name = toTrimOrNull(request.getPathInfo());
 
-            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        if (null != name)
+        {
+            int indx = name.indexOf("/");
 
-            return;
+            if (indx >= 0)
+            {
+                name = toTrimOrNull(name.substring(indx + 1));
+            }
+            if (null != name)
+            {
+                name = getRESTContext().fixRequestBinding(name);
+            }
         }
-        if (read)
+        if (null == name)
         {
-            object = parseBODY(request, type);
-        }
-        if (null == object)
-        {
-            logger.error("passed body is not a JSONObject");
+            logger().error("empty service path found.");
 
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 
             return;
         }
-        String name = null;
-
-        boolean irpc = false;
-
-        if ((read) && isCommandInBody())
-        {
-            irpc = true;
-
-            name = StringOps.toTrimOrNull(object.getAsString("command"));
-
-            if (null == name)
-            {
-                logger.error("no command keys found in body");
-
-                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-
-                return;
-            }
-        }
-        else
-        {
-            name = StringOps.toTrimOrNull(request.getPathInfo());
-
-            if (null != name)
-            {
-                int indx = name.indexOf("/");
-
-                if (indx >= 0)
-                {
-                    name = StringOps.toTrimOrNull(name.substring(indx + 1));
-                }
-                if (null != name)
-                {
-                    if (name.contains(".rpc"))
-                    {
-                        irpc = true;
-                    }
-                    name = getRESTContext().fixRequestBinding(name);
-                }
-            }
-            if (null == name)
-            {
-                logger.error("empty service path found");
-
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-
-                return;
-            }
-        }
-        IRESTService service = getRESTContext().getService(name);
+        IRESTService service = getRESTContext().getBinding(name);
 
         if (null == service)
         {
-            service = getRESTContext().getBinding(name);
+            service = getRESTContext().getService(name);
 
             if (null == service)
             {
-                logger.error("service or binding not found " + name);
+                logger().error(format("service or binding not found (%s).", name));
 
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 
@@ -185,114 +133,19 @@ public class RESTServlet extends HTTPServletBase
         }
         if (type != service.getRequestMethodType())
         {
-            logger.error("service " + name + " not type " + type);
+            logger().error(format("service (%s) not type (%s).", name, type));
 
             response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
             return;
         }
-        if ((read) && (irpc))
+        List<String> uroles = arrayList();
+
+        IServerSession session = getSession(request);
+
+        if (null != session)
         {
-            if (false == object.isDefined("request"))
-            {
-                logger.error("no request key found");
-
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-
-                return;
-            }
-            object = object.getAsObject("request");
-
-            if (null == object)
-            {
-                logger.error("empty request key found");
-
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-
-                return;
-            }
-        }
-        IServerSession session = null;
-
-        List<String> uroles = getDefaultRoles(request);
-
-        String userid = StringOps.toTrimOrNull(request.getHeader(X_USER_ID_HEADER));
-
-        String sessid = StringOps.toTrimOrNull(request.getHeader(X_SESSION_ID_HEADER));
-
-        String ctoken = StringOps.toTrimOrNull(request.getHeader(X_CLIENT_API_TOKEN_HEADER));
-
-        String strict = StringOps.toTrimOrNull(request.getHeader(X_STRICT_JSON_FORMAT_HEADER));
-
-        if (null != sessid)
-        {
-            final IServerSessionRepository repository = getRESTContext().getServerSessionRepository(getSessionProviderDomainName());
-
-            if (null != repository)
-            {
-                session = repository.getSession(sessid);
-
-                if (null == session)
-                {
-                    logger.error("unknown session " + sessid);
-
-                    response.addHeader(WWW_AUTHENTICATE, "unknown session " + sessid);
-
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-
-                    return;
-                }
-                if (session.isExpired())
-                {
-                    logger.error("expired session " + sessid);
-
-                    response.addHeader(WWW_AUTHENTICATE, "expired session " + sessid);
-
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-
-                    return;
-                }
-                uroles = session.getRoles();
-
-                sessid = StringOps.toTrimOrElse(session.getId(), sessid);
-
-                userid = StringOps.toTrimOrElse(session.getUserId(), userid);
-            }
-        }
-        else if (null != ctoken)
-        {
-            final IServerSessionRepository repository = getRESTContext().getServerSessionRepository(getSessionProviderDomainName());
-
-            if (null != repository)
-            {
-                session = repository.createSession(new JSONObject(X_CLIENT_API_TOKEN_HEADER, ctoken));
-
-                if (null == session)
-                {
-                    logger.error("unknown token " + ctoken);
-
-                    response.addHeader(WWW_AUTHENTICATE, "unknown token " + ctoken);
-
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-
-                    return;
-                }
-                if (session.isExpired())
-                {
-                    logger.error("expired session " + sessid);
-
-                    response.addHeader(WWW_AUTHENTICATE, "expired session " + sessid);
-
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-
-                    return;
-                }
-                uroles = session.getRoles();
-
-                sessid = StringOps.toTrimOrElse(session.getId(), sessid);
-
-                userid = StringOps.toTrimOrElse(session.getUserId(), userid);
-            }
+            uroles = session.getRoles();
         }
         if ((null == uroles) || (uroles.isEmpty()))
         {
@@ -302,83 +155,70 @@ public class RESTServlet extends HTTPServletBase
 
         if (false == resp.isAuthorized())
         {
-            if (null == userid)
-            {
-                userid = UNKNOWN_USER;
-            }
-            logger.error("service authorization failed " + name + " for user " + userid + " code " + resp.getText());
+            logger().error(format("service authorization failed for (%s) reason (%s).", name, resp.getText()));
 
-            response.addHeader(WWW_AUTHENTICATE, "unauthorized " + resp.getText());
+            response.addHeader(WWW_AUTHENTICATE, "unauthorized");
 
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 
             return;
         }
-        final RESTRequestContext context = new RESTRequestContext(session, userid, sessid, resp.isAdmin(), uroles, getServletContext(), request, response, type);
+        if (read)
+        {
+            object = parseBODY(request, type);
+        }
+        if (null == object)
+        {
+            logger().error("body is null.");
+
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+            return;
+        }
+        object = clean(object, false);
+
+        final RESTRequestContext context = new RESTRequestContext(session, uroles, getServletContext(), request, response, type);
 
         try
         {
-            final long time = System.nanoTime();
-
-            final long tick = System.currentTimeMillis();
-
             service.acquire();
+
+            final NanoTimer time = new NanoTimer();
 
             JSONObject result = service.execute(context, object);
 
-            final long fast = System.nanoTime() - time;
+            logger().info(format("calling service (%s) took (%s).", name, time.toPrintable()));
 
-            final long done = System.currentTimeMillis() - tick;
-
-            if (done < 1)
+            if (null != result)
             {
-                logger.info("calling service " + name + " took " + fast + " nano's");
+                result = clean(result, true);
             }
-            else
-            {
-                logger.info("calling service " + name + " took " + done + " ms's");
-            }
-            if (null == result)
-            {
-                logger.error("service returned null JSON " + name);
-
-                result = new JSONObject();
-            }
-            result = clean(result);
-
             if (false == context.isClosed())
             {
-                if (irpc)
-                {
-                    writeBODY(HttpServletResponse.SC_OK, request, response, new JSONObject("result", result), isStrict(strict));
-                }
-                else
-                {
-                    writeBODY(HttpServletResponse.SC_OK, request, response, result, isStrict(strict));
-                }
+                writeBODY(HttpServletResponse.SC_OK, request, response, result);
             }
         }
         catch (RESTException e)
         {
             if (false == context.isClosed())
             {
-                writeBODY(e.getCode(), request, response, new JSONObject("error", new JSONObject("code", e.getCode()).set("reason", e.getReason())), isStrict(strict));
+                errorBODY(e.getCode(), request, response, e.getReason());
             }
         }
         catch (Throwable e)
         {
-            final String oops = "calling " + name + " error uuid " + getRESTContext().uuid();
+            final String uuid = uuid();
 
-            logger.error(oops, e);
+            logger().error(format("error calling (%s) uuid (%s).", name, uuid), e);
 
             if (false == context.isClosed())
             {
-                writeBODY(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, request, response, new JSONObject("error", new JSONObject("code", HttpServletResponse.SC_INTERNAL_SERVER_ERROR).set("reason", oops)), isStrict(strict));
+                errorBODY(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, request, response, uuid);
             }
         }
     }
 
-    protected JSONObject clean(final JSONObject json)
+    protected JSONObject clean(final JSONObject json, final boolean outbound)
     {
         return json;
     }
@@ -388,20 +228,9 @@ public class RESTServlet extends HTTPServletBase
         return IServerSessionHelper.SP_DEFAULT_ROLES_LIST;
     }
 
-    protected boolean isStrict(String strict)
+    protected boolean isStrict(final HttpServletRequest request)
     {
-        strict = StringOps.toTrimOrNull(strict);
-
-        if ((null != strict) && ("true".equalsIgnoreCase(strict)))
-        {
-            return true;
-        }
-        return false;
-    }
-
-    protected boolean isCommandInBody()
-    {
-        return false;
+        return Boolean.parseBoolean(toTrimOrNull(request.getHeader(X_STRICT_JSON_FORMAT_HEADER)));
     }
 
     protected JSONObject parseBODY(final HttpServletRequest request, final HttpMethod type)
@@ -412,104 +241,75 @@ public class RESTServlet extends HTTPServletBase
 
             if (leng > 0)
             {
-                IBinder bind = null;
-
-                final String cont = StringOps.toTrimOrElse(request.getContentType(), CONTENT_TYPE_APPLICATION_JSON).toLowerCase();
-
-                if (cont.contains(CONTENT_TYPE_APPLICATION_JSON))
-                {
-                    bind = getServerContext().binder(BinderType.JSON);
-                }
-                else if ((cont.contains(CONTENT_TYPE_TEXT_XML)) || (cont.contains(CONTENT_TYPE_APPLICATION_XML)))
-                {
-                    bind = getServerContext().binder(BinderType.XML);
-                }
-                else if ((cont.contains(CONTENT_TYPE_TEXT_YAML)) || (cont.contains(CONTENT_TYPE_APPLICATION_YAML)))
-                {
-                    bind = getServerContext().binder(BinderType.YAML);
-                }
-                else
-                {
-                    bind = getServerContext().binder(BinderType.JSON);
-                }
                 try
                 {
-                    return bind.bindJSON(request.getInputStream());
+                    return BinderType.forContentType(request.getContentType()).getBinder().bindJSON(request.getInputStream());
                 }
                 catch (ParserException e)
                 {
-                    logger.error("ParserException", e);
+                    logger().error("ParserException", e);
 
                     return null;
                 }
                 catch (IOException e)
                 {
-                    logger.error("IOException", e);
+                    logger().error("IOException", e);
 
                     return null;
                 }
             }
             if (leng == 0)
             {
-                logger.error("empty body on " + type.name());
-
                 return new JSONObject();
             }
         }
         return new JSONObject();
     }
 
-    protected void writeBODY(final int code, final HttpServletRequest request, final HttpServletResponse response, JSONObject output, final boolean strict) throws IOException
+    protected void errorBODY(final int code, final HttpServletRequest request, final HttpServletResponse response, final String reason) throws IOException
+    {
+        writeBODY(code, request, response, new JSONObject("error", new JSONObject("code", code).set("reason", reason)));
+    }
+
+    protected void writeBODY(final int code, final HttpServletRequest request, final HttpServletResponse response, JSONObject output) throws IOException
     {
         doNeverCache(request, response);
 
-        response.setStatus(code);
+        final String type = toTrimOrElse(request.getHeader(ACCEPT), CONTENT_TYPE_APPLICATION_JSON).toLowerCase();
 
-        IBinder bind = null;
-
-        final String cont = StringOps.toTrimOrElse(request.getHeader(ACCEPT), CONTENT_TYPE_APPLICATION_JSON).toLowerCase();
-
-        if (cont.contains(CONTENT_TYPE_APPLICATION_JSON))
+        if (type.contains(CONTENT_TYPE_APPLICATION_JSON))
         {
             response.setContentType(CONTENT_TYPE_APPLICATION_JSON);
-
-            bind = getServerContext().binder(BinderType.JSON);
         }
-        else if (cont.contains(CONTENT_TYPE_TEXT_XML))
+        else if (type.contains(CONTENT_TYPE_TEXT_XML))
         {
-            output = new JSONResult(output);
-
             response.setContentType(CONTENT_TYPE_TEXT_XML);
-
-            bind = getServerContext().binder(BinderType.XML);
         }
-        else if (cont.contains(CONTENT_TYPE_APPLICATION_XML))
+        else if (type.contains(CONTENT_TYPE_APPLICATION_XML))
         {
-            output = new JSONResult(output);
-
             response.setContentType(CONTENT_TYPE_APPLICATION_XML);
-
-            bind = getServerContext().binder(BinderType.XML);
         }
-        else if (cont.contains(CONTENT_TYPE_TEXT_YAML))
+        else if (type.contains(CONTENT_TYPE_TEXT_YAML))
         {
             response.setContentType(CONTENT_TYPE_TEXT_YAML);
-
-            bind = getServerContext().binder(BinderType.YAML);
         }
-        else if (cont.contains(CONTENT_TYPE_APPLICATION_YAML))
+        else if (type.contains(CONTENT_TYPE_APPLICATION_YAML))
         {
             response.setContentType(CONTENT_TYPE_APPLICATION_YAML);
-
-            bind = getServerContext().binder(BinderType.YAML);
         }
         else
         {
             response.setContentType(CONTENT_TYPE_APPLICATION_JSON);
-
-            bind = getServerContext().binder(BinderType.JSON);
         }
-        bind = bind.setStrict(strict);
+        if (null == output)
+        {
+            response.setContentLength(0);
+
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+
+            return;
+        }
+        response.setStatus(code);
 
         final OutputStream stream = response.getOutputStream();
 
@@ -517,7 +317,7 @@ public class RESTServlet extends HTTPServletBase
 
         try
         {
-            bind.send(stream, output);
+            BinderType.forContentType(type).getBinder().setStrict(isStrict(request)).send(stream, response);
         }
         catch (ParserException e)
         {
@@ -531,24 +331,17 @@ public class RESTServlet extends HTTPServletBase
         return RESTContextInstance.getRESTContextInstance();
     }
 
+    /*
     @Override
     public void service(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
         if ("PATCH".equalsIgnoreCase(request.getMethod()))
         {
             doPatch(request, response);
-
+    
             return;
         }
         super.service(request, response);
     }
-
-    @JacksonXmlRootElement(localName = "result")
-    protected static class JSONResult extends JSONObject
-    {
-        public JSONResult(final JSONObject object)
-        {
-            super(object);
-        }
-    }
+    */
 }

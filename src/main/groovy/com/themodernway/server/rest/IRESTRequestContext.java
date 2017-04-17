@@ -29,7 +29,7 @@ import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.servlet.IServletCommonOperations;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 
-public interface IRESTRequestContext extends IServletCommonOperations
+public interface IRESTRequestContext extends IServletCommonOperations, AutoCloseable
 {
     public IServerSession getSession();
 
@@ -47,13 +47,7 @@ public interface IRESTRequestContext extends IServletCommonOperations
 
     public HttpServletResponse getServletResponse();
 
-    public String getSessionID();
-
-    public String getUserID();
-
     public List<String> getRoles();
-
-    public boolean isAdmin();
 
     public boolean isDelete();
 
@@ -66,8 +60,6 @@ public interface IRESTRequestContext extends IServletCommonOperations
     public boolean isPut();
 
     public void setCookie(String name, String value);
-
-    public void close();
 
     public boolean isClosed();
 }

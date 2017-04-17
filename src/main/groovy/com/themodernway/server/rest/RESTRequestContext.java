@@ -16,8 +16,8 @@
 
 package com.themodernway.server.rest;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.Cookie;
@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 
-import com.themodernway.common.api.java.util.StringOps;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.rest.support.spring.IRESTContext;
@@ -34,15 +33,9 @@ import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
 public class RESTRequestContext implements IRESTRequestContext
 {
-    private boolean                   m_closed;
-
-    private final String              m_userid;
-
-    private final String              m_sessid;
+    private final AtomicBoolean       m_closed = new AtomicBoolean(false);
 
     private final HttpMethod          m_reqtyp;
-
-    private final boolean             m_admin;
 
     private final List<String>        m_roles;
 
@@ -54,21 +47,13 @@ public class RESTRequestContext implements IRESTRequestContext
 
     private final HttpServletResponse m_servlet_response;
 
-    public RESTRequestContext(IServerSession session, String userid, String sessid, boolean admin, List<String> roles, ServletContext context, HttpServletRequest request, HttpServletResponse response, HttpMethod reqtyp)
+    public RESTRequestContext(IServerSession session, List<String> roles, ServletContext context, HttpServletRequest request, HttpServletResponse response, HttpMethod reqtyp)
     {
-        m_closed = false;
-
         m_reqtyp = reqtyp;
-
-        m_userid = userid;
-
-        m_sessid = sessid;
-
-        m_admin = admin;
 
         m_session = session;
 
-        m_roles = Collections.unmodifiableList(roles);
+        m_roles = toUnmodifiableList(roles);
 
         m_servlet_context = context;
 
@@ -114,12 +99,6 @@ public class RESTRequestContext implements IRESTRequestContext
     }
 
     @Override
-    public boolean isAdmin()
-    {
-        return m_admin;
-    }
-
-    @Override
     public IRESTContext getRESTContext()
     {
         return RESTContextInstance.getRESTContextInstance();
@@ -144,47 +123,13 @@ public class RESTRequestContext implements IRESTRequestContext
     }
 
     @Override
-    public String getSessionID()
-    {
-        final IServerSession sess = getSession();
-
-        if (null != sess)
-        {
-            String valu = sess.getId();
-
-            if (null != valu)
-            {
-                return valu;
-            }
-        }
-        return m_sessid;
-    }
-
-    @Override
-    public String getUserID()
-    {
-        final IServerSession sess = getSession();
-
-        if (null != sess)
-        {
-            String valu = sess.getUserId();
-
-            if (null != valu)
-            {
-                return valu;
-            }
-        }
-        return m_userid;
-    }
-
-    @Override
     public void setCookie(String name, String value)
     {
         HttpServletRequest request = getServletRequest();
 
         HttpServletResponse response = getServletResponse();
 
-        if ((null != request) && (null != response) && (null != (name = StringOps.toTrimOrNull(name))))
+        if ((null != request) && (null != response) && (null != (name = toTrimOrNull(name))))
         {
             if (null == value)
             {
@@ -246,7 +191,7 @@ public class RESTRequestContext implements IRESTRequestContext
 
             if ((null != valu) && (false == valu.isEmpty()))
             {
-                return Collections.unmodifiableList(valu);
+                return toUnmodifiableList(valu);
             }
         }
         return m_roles;
@@ -255,13 +200,13 @@ public class RESTRequestContext implements IRESTRequestContext
     @Override
     public void close()
     {
-        m_closed = true;
+        m_closed.set(true);
     }
 
     @Override
     public boolean isClosed()
     {
-        return m_closed;
+        return m_closed.get();
     }
 
     @Override
@@ -278,6 +223,12 @@ public class RESTRequestContext implements IRESTRequestContext
     @Override
     public String getName()
     {
-        return m_userid;
+        final IServerSession sess = getSession();
+
+        if (null != sess)
+        {
+            toTrimOrElse(sess.getUserId(), UNKNOWN_USER);
+        }
+        return UNKNOWN_USER;
     }
 }
