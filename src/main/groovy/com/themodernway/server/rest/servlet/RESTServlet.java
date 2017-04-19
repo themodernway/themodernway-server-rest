@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 
-import com.themodernway.server.core.NanoTimer;
+import com.themodernway.server.core.ITimeSupplier;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
 import com.themodernway.server.core.json.binder.BinderType;
@@ -80,6 +80,7 @@ public class RESTServlet extends HTTPServletBase
         doService(request, response, true, HttpMethod.POST, null);
     }
 
+    @Override
     public void doPatch(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
         doService(request, response, true, HttpMethod.PATCH, null);
@@ -183,12 +184,24 @@ public class RESTServlet extends HTTPServletBase
         {
             service.acquire();
 
-            final NanoTimer time = new NanoTimer();
+            final long mills = ITimeSupplier.mills().getTime();
+
+            final long nanos = ITimeSupplier.nanos().getTime();
 
             JSONObject result = service.execute(context, object);
 
-            logger().info(format("calling service (%s) took (%s).", name, time.toPrintable()));
+            final long ndiff = ITimeSupplier.nanos().getTime() - nanos;
 
+            final long mdiff = ITimeSupplier.mills().getTime() - mills;
+
+            if (mdiff < 1)
+            {
+                logger().info(format("calling service (%s) took (%s) nanos.", name, ndiff));
+            }
+            else
+            {
+                logger().info(format("calling service (%s) took (%s) mills.", name, mdiff));
+            }
             if (null != result)
             {
                 result = clean(result, true);
@@ -211,10 +224,7 @@ public class RESTServlet extends HTTPServletBase
 
             logger().error(format("error calling (%s) uuid (%s).", name, uuid), e);
 
-            if (false == context.isClosed())
-            {
-                errorBODY(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, request, response, uuid);
-            }
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, uuid);
         }
     }
 
@@ -273,6 +283,8 @@ public class RESTServlet extends HTTPServletBase
 
     protected void writeBODY(final int code, final HttpServletRequest request, final HttpServletResponse response, JSONObject output) throws IOException
     {
+        logger().info("writeBODY()");
+
         doNeverCache(request, response);
 
         final String type = toTrimOrElse(request.getHeader(ACCEPT), CONTENT_TYPE_APPLICATION_JSON).toLowerCase();
@@ -317,7 +329,7 @@ public class RESTServlet extends HTTPServletBase
 
         try
         {
-            BinderType.forContentType(type).getBinder().setStrict(isStrict(request)).send(stream, response);
+            BinderType.forContentType(type).getBinder().setStrict(isStrict(request)).send(stream, output);
         }
         catch (ParserException e)
         {
@@ -330,18 +342,4 @@ public class RESTServlet extends HTTPServletBase
     {
         return RESTContextInstance.getRESTContextInstance();
     }
-
-    /*
-    @Override
-    public void service(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
-    {
-        if ("PATCH".equalsIgnoreCase(request.getMethod()))
-        {
-            doPatch(request, response);
-    
-            return;
-        }
-        super.service(request, response);
-    }
-    */
 }
