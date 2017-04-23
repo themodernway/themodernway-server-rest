@@ -19,6 +19,7 @@ package com.themodernway.server.rest.support.spring;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -27,11 +28,11 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.jmx.export.annotation.ManagedAttribute;
+import org.springframework.http.HttpMethod;
 import org.springframework.jmx.export.annotation.ManagedResource;
 
-import com.themodernway.common.api.java.util.StringOps;
 import com.themodernway.server.rest.IRESTService;
+import com.themodernway.server.rest.RESTUtils;
 
 /**
  * ServiceRegistry - Registry of all IRESTService services found in the application.
@@ -39,122 +40,95 @@ import com.themodernway.server.rest.IRESTService;
 @ManagedResource
 public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
 {
-    private static final Logger                       logger     = Logger.getLogger(ServiceRegistry.class);
+    private static final Logger                                              logger     = Logger.getLogger(ServiceRegistry.class);
 
-    private final LinkedHashMap<String, IRESTService> m_services = new LinkedHashMap<String, IRESTService>();
+    private final HashSet<String>                                            m_valpaths = new HashSet<String>();
 
-    private final LinkedHashMap<String, IRESTService> m_bindings = new LinkedHashMap<String, IRESTService>();
+    private final ArrayList<IRESTService>                                    m_services = new ArrayList<IRESTService>();
+
+    private final LinkedHashMap<String, LinkedHashMap<String, IRESTService>> m_bindings = new LinkedHashMap<String, LinkedHashMap<String, IRESTService>>();
 
     public ServiceRegistry()
     {
+        for (HttpMethod method : HttpMethod.values())
+        {
+            m_bindings.put(method.name(), new LinkedHashMap<String, IRESTService>());
+        }
     }
 
     protected void addService(final IRESTService service)
     {
         if (null != service)
         {
-            String name = StringOps.toTrimOrNull(service.getName());
+            final String bind = RESTUtils.fixBinding(service.getRequestBinding());
 
-            if (null != name)
+            if (null != bind)
             {
-                if (null == m_services.get(name))
-                {
-                    m_services.put(name, service);
+                final HttpMethod method = service.getRequestMethodType();
 
-                    logger.info("ServiceRegistry.addService(" + name + ") Registered");
+                if (null != method)
+                {
+                    final LinkedHashMap<String, IRESTService> find = m_bindings.get(method.name());
+
+                    if (null == find.get(bind))
+                    {
+                        m_valpaths.add(bind);
+
+                        m_services.add(service);
+
+                        find.put(bind, service);
+
+                        logger.info("ServiceRegistry.addService(" + bind + "," + method.name() + ") registered.");
+                    }
+                    else
+                    {
+                        logger.error("ServiceRegistry.addService(" + bind + "," + method.name() + ") ignored.");
+                    }
                 }
                 else
                 {
-                    logger.error("ServiceRegistry.addService(" + name + ") Duplicate ignored");
+                    logger.error("ServiceRegistry.addService(" + bind + ") null type.");
                 }
             }
             else
             {
-                logger.error("ServiceRegistry.addService(" + service.getClass().getSimpleName() + ") has null or empty name.");
-            }
-            String bind = StringOps.toTrimOrNull(service.getRequestBinding());
-
-            if (null != bind)
-            {
-                if (null == m_bindings.get(bind))
-                {
-                    m_bindings.put(bind, service);
-
-                    logger.info("ServiceRegistry.addService(" + bind + ") Binding Registered");
-                }
-                else
-                {
-                    logger.error("ServiceRegistry.addService(" + bind + ") Duplicate binding ignored");
-                }
-            }
-            if ((null != name) && (null == bind))
-            {
-                bind = "/" + name;
-
-                if (null == m_bindings.get(bind))
-                {
-                    m_bindings.put(bind, service);
-
-                    logger.info("ServiceRegistry.addService(" + bind + ") Binding Registered");
-                }
-                else
-                {
-                    logger.error("ServiceRegistry.addService(" + bind + ") Duplicate binding ignored");
-                }
+                logger.error("ServiceRegistry.addService() null binding.");
             }
         }
         else
         {
-            logger.error("ServiceRegistry.addService(null)");
+            logger.error("ServiceRegistry.addService() null service.");
         }
     }
 
     @Override
-    public IRESTService getService(String name)
+    public IRESTService getBinding(String bind, HttpMethod method)
     {
-        name = StringOps.toTrimOrNull(name);
-
-        if (null != name)
-        {
-            return m_services.get(name);
-        }
-        return null;
-    }
-
-    @Override
-    public IRESTService getBinding(String bind)
-    {
-        bind = StringOps.toTrimOrNull(bind);
+        bind = RESTUtils.fixBinding(bind);
 
         if (null != bind)
         {
-            if (false == bind.startsWith("/"))
-            {
-                bind = "/" + bind;
-            }
-            return m_bindings.get(bind);
+            return m_bindings.get(method.name()).get(bind);
         }
         return null;
     }
 
     @Override
-    @ManagedAttribute(description = "Get IRESTService names.")
-    public List<String> getServiceNames()
+    public boolean isBindingRegistered(String bind)
     {
-        return Collections.unmodifiableList(new ArrayList<String>(m_services.keySet()));
-    }
+        bind = RESTUtils.fixBinding(bind);
 
-    @Override
-    @ManagedAttribute(description = "Get IRESTService RequestBindings.")
-    public List<String> getRequestBindings()
-    {
-        return Collections.unmodifiableList(new ArrayList<String>(m_bindings.keySet()));
+        if (null != bind)
+        {
+            return m_valpaths.contains(bind);
+        }
+        return false;
     }
 
     @Override
     public List<IRESTService> getServices()
     {
-        return Collections.unmodifiableList(new ArrayList<IRESTService>(m_services.values()));
+        return Collections.unmodifiableList(m_services);
     }
 
     @Override
@@ -178,13 +152,11 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
             {
                 try
                 {
-                    logger.info("ServiceRegistry.close(" + service.getName() + ")");
-
                     service.close();
                 }
                 catch (Exception e)
                 {
-                    logger.error("ServiceRegistry.close(" + service.getName() + ") ERROR ", e);
+                    logger.error("ServiceRegistry.close().", e);
                 }
             }
         }

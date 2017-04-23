@@ -16,13 +16,9 @@
 
 package com.themodernway.server.rest
 
-import javax.servlet.http.HttpServletResponse
-
 import org.springframework.http.HttpMethod
-import org.springframework.stereotype.Service
 
 import com.google.common.util.concurrent.RateLimiter
-import com.themodernway.common.api.java.util.StringOps
 import com.themodernway.server.core.json.JSONObject
 import com.themodernway.server.core.json.schema.JSONSchema
 import com.themodernway.server.rest.support.RESTSupport
@@ -50,38 +46,15 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
     }
 
     @Memoized
-    public String getName()
-    {
-        final Class<?> claz = getClass()
-
-        if (claz.isAnnotationPresent(Service))
-        {
-            final String name = StringOps.toTrimOrNull(claz.getAnnotation(Service).value())
-
-            if (name)
-            {
-                return name
-            }
-        }
-        claz.getSimpleName()
-    }
-
-    @Memoized
     public String getRequestBinding()
     {
         final Class<?> claz = getClass()
 
         if (claz.isAnnotationPresent(RequestBinding))
         {
-            return fixRequestBinding(StringOps.toTrimOrNull(claz.getAnnotation(RequestBinding).value()))
+            return RESTUtils.fixBinding(claz.getAnnotation(RequestBinding).value())
         }
         null
-    }
-    
-    @Memoized
-    public String getRequestBindingAbsolute()
-    {
-        getRequestBinding() ?: fixRequestBinding(getName())
     }
 
     @Memoized
@@ -91,7 +64,7 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
 
         if (claz.isAnnotationPresent(RequestMethod))
         {
-            return claz.getAnnotation(RequestMethod).value()
+            return claz.getAnnotation(RequestMethod).value() ?: HttpMethod.GET
         }
         HttpMethod.GET
     }
@@ -117,16 +90,12 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
     @Override
     public JSONObject getSwaggerAttributes()
     {
-        json(path: getRequestBindingAbsolute(), method: getRequestMethodType().name(), schemas: getSchemas())
+        json(path: getRequestBinding(), method: getRequestMethodType().name(), schemas: getSchemas())
     }
     
-    protected JSONObject failure(final String reason, final int code) throws RESTException
+    @Memoized
+    public IResponseActions responses()
     {
-        throw new RESTException(reason, code)
-    }
-    
-    protected JSONObject failure(final String reason) throws RESTException
-    {
-        failure(reason, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+        new DefaultResponseActions()
     }
 }

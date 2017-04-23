@@ -16,6 +16,8 @@
 
 package com.themodernway.server.rest.support
 
+import org.springframework.http.HttpMethod
+
 import com.themodernway.server.rest.IRESTService
 import com.themodernway.server.rest.support.spring.IRESTContext
 import com.themodernway.server.rest.support.spring.IServiceRegistry
@@ -40,26 +42,20 @@ public trait RESTTrait
     }
 
     @Memoized
-    public IRESTService getService(String name)
+    public IRESTService getBinding(String bind, HttpMethod method)
     {
-        getServiceRegistry().getService(name)
-    }
-
-    @Memoized
-    public IRESTService getBinding(String bind)
-    {
-        getServiceRegistry().getBinding(bind)
-    }
-
-    @Memoized
-    public String fixRequestBinding(String bind)
-    {
-        getRESTContext().fixRequestBinding(bind)
+        getServiceRegistry().getBinding(bind, method)
     }
 
     @Memoized
     public List<IRESTService> getServices()
     {
         getServiceRegistry().getServices()
+    }
+
+    @Memoized
+    public boolean isBindingRegistered(String bind)
+    {
+        getServiceRegistry().isBindingRegistered(bind)
     }
 }

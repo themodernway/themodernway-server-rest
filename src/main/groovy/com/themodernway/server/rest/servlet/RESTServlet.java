@@ -18,7 +18,10 @@ package com.themodernway.server.rest.servlet;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpMethod;
 
 import com.themodernway.server.core.ITimeSupplier;
+import com.themodernway.server.core.file.FilePathUtils;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
 import com.themodernway.server.core.json.binder.BinderType;
@@ -35,8 +39,10 @@ import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.security.session.IServerSessionHelper;
 import com.themodernway.server.core.servlet.HTTPServletBase;
 import com.themodernway.server.rest.IRESTService;
+import com.themodernway.server.rest.IResponseAction;
 import com.themodernway.server.rest.RESTException;
 import com.themodernway.server.rest.RESTRequestContext;
+import com.themodernway.server.rest.RESTUtils;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
@@ -89,27 +95,14 @@ public class RESTServlet extends HTTPServletBase
     @Override
     public void doDelete(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
-        doService(request, response, true, HttpMethod.DELETE, new JSONObject());
+        doService(request, response, true, HttpMethod.DELETE, null);
     }
 
-    protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject object) throws ServletException, IOException
+    protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject params) throws ServletException, IOException
     {
-        String name = toTrimOrNull(request.getPathInfo());
+        String bind = RESTUtils.fixBinding(toTrimOrElse(request.getPathInfo(), FilePathUtils.SINGLE_SLASH));
 
-        if (null != name)
-        {
-            int indx = name.indexOf("/");
-
-            if (indx >= 0)
-            {
-                name = toTrimOrNull(name.substring(indx + 1));
-            }
-            if (null != name)
-            {
-                name = getRESTContext().fixRequestBinding(name);
-            }
-        }
-        if (null == name)
+        if (null == bind)
         {
             logger().error("empty service path found.");
 
@@ -117,15 +110,21 @@ public class RESTServlet extends HTTPServletBase
 
             return;
         }
-        IRESTService service = getRESTContext().getBinding(name);
+        final IRESTService service = getRESTContext().getBinding(bind, type);
 
         if (null == service)
         {
-            service = getRESTContext().getService(name);
-
-            if (null == service)
+            if (getRESTContext().isBindingRegistered(bind))
             {
-                logger().error(format("service or binding not found (%s).", name));
+                logger().error(format("service (%s) not type (%s).", bind, type));
+
+                response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+
+                return;
+            }
+            else
+            {
+                logger().error(format("service or binding not found (%s).", bind));
 
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 
@@ -134,7 +133,7 @@ public class RESTServlet extends HTTPServletBase
         }
         if (type != service.getRequestMethodType())
         {
-            logger().error(format("service (%s) not type (%s).", name, type));
+            logger().error(format("service (%s) not type (%s).", bind, type));
 
             response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
@@ -142,7 +141,7 @@ public class RESTServlet extends HTTPServletBase
         }
         List<String> uroles = arrayList();
 
-        IServerSession session = getSession(request);
+        final IServerSession session = getSession(request);
 
         if (null != session)
         {
@@ -152,11 +151,11 @@ public class RESTServlet extends HTTPServletBase
         {
             uroles = getDefaultRoles(request);
         }
-        final AuthorizationResult resp = isAuthorized(request, session, service, uroles);
+        final AuthorizationResult auth = isAuthorized(request, session, service, uroles);
 
-        if (false == resp.isAuthorized())
+        if (false == auth.isAuthorized())
         {
-            logger().error(format("service authorization failed for (%s) reason (%s).", name, resp.getText()));
+            logger().error(format("service authorization failed for (%s) reason (%s).", bind, auth.getText()));
 
             response.addHeader(WWW_AUTHENTICATE, "unauthorized");
 
@@ -166,9 +165,9 @@ public class RESTServlet extends HTTPServletBase
         }
         if (read)
         {
-            object = parseBODY(request, type);
+            params = parseBODY(request, type);
         }
-        if (null == object)
+        if (null == params)
         {
             logger().error("body is null.");
 
@@ -176,7 +175,7 @@ public class RESTServlet extends HTTPServletBase
 
             return;
         }
-        object = clean(object, false);
+        params = clean(params, false);
 
         final RESTRequestContext context = new RESTRequestContext(session, uroles, getServletContext(), request, response, type);
 
@@ -188,7 +187,7 @@ public class RESTServlet extends HTTPServletBase
 
             final long nanos = ITimeSupplier.nanos().getTime();
 
-            JSONObject result = service.execute(context, object);
+            final Object object = service.call(context, params);
 
             final long ndiff = ITimeSupplier.nanos().getTime() - nanos;
 
@@ -196,12 +195,20 @@ public class RESTServlet extends HTTPServletBase
 
             if (mdiff < 1)
             {
-                logger().info(format("calling service (%s) took (%s) nanos.", name, ndiff));
+                logger().info(format("calling service (%s) took (%s) nanos.", bind, ndiff));
             }
             else
             {
-                logger().info(format("calling service (%s) took (%s) mills.", name, mdiff));
+                logger().info(format("calling service (%s) took (%s) mills.", bind, mdiff));
             }
+            if (object instanceof IResponseAction)
+            {
+                ((IResponseAction) object).call(request, response);
+
+                return;
+            }
+            JSONObject result = json(object);
+
             if (null != result)
             {
                 result = clean(result, true);
@@ -222,9 +229,37 @@ public class RESTServlet extends HTTPServletBase
         {
             final String uuid = uuid();
 
-            logger().error(format("error calling (%s) uuid (%s).", name, uuid), e);
+            logger().error(format("error calling (%s) uuid (%s).", bind, uuid), e);
 
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, uuid);
+        }
+    }
+
+    protected JSONObject json(final Object object) throws Exception
+    {
+        if (null == object)
+        {
+            return null;
+        }
+        if (object instanceof JSONObject)
+        {
+            return ((JSONObject) object);
+        }
+        if (object instanceof Collection<?>)
+        {
+            return getRESTContext().json((Collection<?>) object);
+        }
+        if (object instanceof Optional)
+        {
+            return json(((Optional<?>) object).get());
+        }
+        if (object instanceof Future)
+        {
+            return json(((Future<?>) object).get());
+        }
+        else
+        {
+            return BinderType.JSON.getBinder().toJSONObject(object);
         }
     }
 
@@ -281,10 +316,8 @@ public class RESTServlet extends HTTPServletBase
         writeBODY(code, request, response, new JSONObject("error", new JSONObject("code", code).set("reason", reason)));
     }
 
-    protected void writeBODY(final int code, final HttpServletRequest request, final HttpServletResponse response, JSONObject output) throws IOException
+    protected void writeBODY(final int code, final HttpServletRequest request, final HttpServletResponse response, final JSONObject output) throws IOException
     {
-        logger().info("writeBODY()");
-
         doNeverCache(request, response);
 
         final String type = toTrimOrElse(request.getHeader(ACCEPT), CONTENT_TYPE_APPLICATION_JSON).toLowerCase();
@@ -338,7 +371,7 @@ public class RESTServlet extends HTTPServletBase
         stream.flush();
     }
 
-    protected final IRESTContext getRESTContext()
+    protected IRESTContext getRESTContext()
     {
         return RESTContextInstance.getRESTContextInstance();
     }

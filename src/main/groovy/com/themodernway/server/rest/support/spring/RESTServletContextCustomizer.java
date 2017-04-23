@@ -18,6 +18,7 @@ package com.themodernway.server.rest.support.spring;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
@@ -26,10 +27,11 @@ import org.apache.log4j.Logger;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.themodernway.common.api.java.util.StringOps;
+import com.themodernway.server.core.ICoreCommon;
 import com.themodernway.server.core.support.spring.IServletContextCustomizer;
 import com.themodernway.server.rest.servlet.RESTServlet;
 
-public class RESTServletContextCustomizer implements IServletContextCustomizer
+public class RESTServletContextCustomizer implements IServletContextCustomizer, ICoreCommon
 {
     private static final Logger logger = Logger.getLogger(RESTServletContextCustomizer.class);
 
@@ -38,6 +40,8 @@ public class RESTServletContextCustomizer implements IServletContextCustomizer
     private final String[]      m_maps;
 
     private int                 m_load = 1;
+
+    private List<String>        m_role = arrayList();
 
     public RESTServletContextCustomizer(final String name, final String maps)
     {
@@ -77,6 +81,28 @@ public class RESTServletContextCustomizer implements IServletContextCustomizer
     public String[] getMappings()
     {
         return m_maps;
+    }
+
+    public List<String> getRequiredRoles()
+    {
+        return toUnmodifiableList(m_role);
+    }
+
+    public void setRequiredRoles(String roles)
+    {
+        if (null == (roles = toTrimOrNull(roles)))
+        {
+            setRequiredRoles(arrayList());
+        }
+        else
+        {
+            setRequiredRoles(toUniqueStringList(roles));
+        }
+    }
+
+    public void setRequiredRoles(final List<String> roles)
+    {
+        m_role = (roles == null ? arrayList() : roles);
     }
 
     @Override
@@ -127,6 +153,10 @@ public class RESTServletContextCustomizer implements IServletContextCustomizer
 
     protected RESTServlet doMakeRESTServlet(final ServletContext sc, final WebApplicationContext context)
     {
-        return new RESTServlet();
+        final RESTServlet inst = new RESTServlet();
+
+        inst.setRequiredRoles(getRequiredRoles());
+
+        return inst;
     }
 }

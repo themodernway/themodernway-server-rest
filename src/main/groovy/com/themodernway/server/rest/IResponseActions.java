@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-package com.themodernway.server.rest.support.spring;
+package com.themodernway.server.rest;
 
-import java.util.List;
-
-import org.springframework.http.HttpMethod;
-
-import com.themodernway.server.core.support.spring.IServerContext;
-import com.themodernway.server.rest.IRESTService;
-
-public interface IRESTContext extends IServerContext
+public interface IResponseActions
 {
-    public IRESTService getBinding(String bind, HttpMethod type);
+    public IResponseAction code(int code);
 
-    public boolean isBindingRegistered(String bind);
+    public IResponseAction failure(int code);
 
-    public IServiceRegistry getServiceRegistry();
+    public IResponseAction failure(int code, String mess);
 
-    public List<IRESTService> getServices();
+    public IResponseAction failure(String msss);
+
+    public IResponseAction forward(String path);
+
+    public IResponseAction redirect(String path);
 }

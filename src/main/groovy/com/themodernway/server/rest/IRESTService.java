@@ -20,18 +20,13 @@ import java.io.Closeable;
 
 import org.springframework.http.HttpMethod;
 
-import com.themodernway.common.api.types.INamed;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.schema.JSONSchema;
 import com.themodernway.server.core.limiting.IRateLimited;
 
-public interface IRESTService extends INamed, IRateLimited, Closeable
+public interface IRESTService extends IRateLimited, Closeable
 {
     public String getRequestBinding();
-    
-    public String getRequestBindingAbsolute();
-
-    public JSONObject execute(IRESTRequestContext context, JSONObject object) throws Exception;
 
     public JSONObject getSchemas();
 
@@ -42,4 +37,6 @@ public interface IRESTService extends INamed, IRateLimited, Closeable
     public HttpMethod getRequestMethodType();
 
     public JSONObject getSwaggerAttributes();
+    
+    public Object call(IRESTRequestContext context, JSONObject object) throws Exception;
 }

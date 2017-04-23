@@ -20,7 +20,7 @@ import com.themodernway.common.api.java.util.StringOps;
 
 public class RESTException extends Exception
 {
-    private static final long serialVersionUID = -6702242599626693016L;
+    private static final long serialVersionUID = 1L;
 
     private final int         m_code;
 

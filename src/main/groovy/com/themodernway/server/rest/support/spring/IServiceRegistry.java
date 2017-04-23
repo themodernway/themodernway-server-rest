@@ -19,17 +19,15 @@ package com.themodernway.server.rest.support.spring;
 import java.io.Closeable;
 import java.util.List;
 
+import org.springframework.http.HttpMethod;
+
 import com.themodernway.server.rest.IRESTService;
 
 public interface IServiceRegistry extends Closeable
 {
-    public IRESTService getService(String name);
+    public IRESTService getBinding(String bind, HttpMethod method);
 
-    public IRESTService getBinding(String bind);
-
-    public List<String> getServiceNames();
-
-    public List<String> getRequestBindings();
+    public boolean isBindingRegistered(String bind);
 
     public List<IRESTService> getServices();
 }

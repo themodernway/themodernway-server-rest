@@ -19,7 +19,8 @@ package com.themodernway.server.rest.support.spring;
 import java.util.List;
 import java.util.Objects;
 
-import com.themodernway.common.api.java.util.StringOps;
+import org.springframework.http.HttpMethod;
+
 import com.themodernway.server.core.support.spring.ServerContextInstance;
 import com.themodernway.server.rest.IRESTService;
 
@@ -43,47 +44,15 @@ public class RESTContextInstance extends ServerContextInstance implements IRESTC
     }
 
     @Override
-    public IRESTService getService(final String name)
+    public IRESTService getBinding(final String bind, final HttpMethod method)
     {
-        return getServiceRegistry().getService(Objects.requireNonNull(name));
+        return getServiceRegistry().getBinding(Objects.requireNonNull(bind), Objects.requireNonNull(method));
     }
-
+    
     @Override
-    public IRESTService getBinding(final String bind)
+    public boolean isBindingRegistered(final String bind)
     {
-        return getServiceRegistry().getBinding(Objects.requireNonNull(bind));
-    }
-
-    @Override
-    public String fixRequestBinding(String bind)
-    {
-        bind = StringOps.toTrimOrNull(bind);
-
-        if (null != bind)
-        {
-            String temp = bind.replaceAll("//", "/").replaceAll("\\s", "");
-
-            while (false == temp.equals(bind))
-            {
-                bind = temp;
-
-                temp = bind.replaceAll("//", "/");
-            }
-            if (false == bind.startsWith("/"))
-            {
-                bind = "/" + bind;
-            }
-            if (bind.endsWith("/"))
-            {
-                bind = bind.substring(0, bind.length() - 1);
-            }
-            if (bind.endsWith(".rpc"))
-            {
-                bind = bind.substring(0, bind.length() - 4);
-            }
-            bind = StringOps.toTrimOrNull(bind);
-        }
-        return bind;
+        return getServiceRegistry().isBindingRegistered(Objects.requireNonNull(bind));
     }
 
     @Override
