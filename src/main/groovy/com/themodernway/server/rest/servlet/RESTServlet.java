@@ -18,10 +18,7 @@ package com.themodernway.server.rest.servlet;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.Future;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -244,22 +241,7 @@ public class RESTServlet extends HTTPServletBase
         {
             return ((JSONObject) object);
         }
-        if (object instanceof Collection<?>)
-        {
-            return getRESTContext().json((Collection<?>) object);
-        }
-        if (object instanceof Optional)
-        {
-            return json(((Optional<?>) object).get());
-        }
-        if (object instanceof Future)
-        {
-            return json(((Future<?>) object).get());
-        }
-        else
-        {
-            return BinderType.JSON.getBinder().toJSONObject(object);
-        }
+        return getRESTContext().json(object);
     }
 
     protected JSONObject clean(final JSONObject json, final boolean outbound)
