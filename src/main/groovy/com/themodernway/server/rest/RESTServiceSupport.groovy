@@ -19,6 +19,7 @@ package com.themodernway.server.rest
 import org.springframework.http.HttpMethod
 
 import com.google.common.util.concurrent.RateLimiter
+import com.themodernway.server.core.file.FileAndPathUtils
 import com.themodernway.server.core.json.JSONObject
 import com.themodernway.server.core.json.schema.JSONSchema
 import com.themodernway.server.rest.support.RESTSupport
@@ -52,7 +53,7 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
 
         if (claz.isAnnotationPresent(RequestBinding))
         {
-            return RESTUtils.fixBinding(claz.getAnnotation(RequestBinding).value())
+            return FileAndPathUtils.fixPathBinding(claz.getAnnotation(RequestBinding).value())
         }
         null
     }
@@ -94,7 +95,7 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
     }
     
     @Memoized
-    public IResponseActions responses()
+    public DefaultResponseActions responses()
     {
         new DefaultResponseActions()
     }

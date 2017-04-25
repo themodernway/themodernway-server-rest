@@ -1,7 +1,7 @@
 The Modern Way Server REST
 ======
 
-The Modern Way Server SQL is a package containing basic server REST support.
+The Modern Way Server REST is a package containing basic server REST support.
 
 https://github.com/themodernway/themodernway-server-rest
 
@@ -14,14 +14,14 @@ Maven:
 <dependency>
   <groupId>com.themodernway</groupId>
   <artifactId>themodernway-server-rest</artifactId>
-  <version>1.0.7-RELEASE</version>
+  <version>1.0.8-RELEASE</version>
 </dependency>
 ```
 Gradle:
 
 ```
 dependencies {
-    compile(group:'com.themodernway',name:'themodernway-server-rest',version:'1.0.7-RELEASE')
+    compile(group:'com.themodernway',name:'themodernway-server-rest',version:'1.0.8-RELEASE')
 }
 ```
 Javadoc URL:

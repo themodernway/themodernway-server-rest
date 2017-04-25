@@ -16,13 +16,17 @@
 
 package com.themodernway.server.rest
 
-import javax.servlet.http.HttpServletResponse
+import com.themodernway.server.core.servlet.ErrorResponseAction
+import com.themodernway.server.core.servlet.ForwardResponseAction
+import com.themodernway.server.core.servlet.IResponseAction
+import com.themodernway.server.core.servlet.RedirectResponseAction
+import com.themodernway.server.core.servlet.StatusCodeResponseAction
 
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 
 @CompileStatic
-public class DefaultResponseActions implements IResponseActions
+public class DefaultResponseActions
 {
     public DefaultResponseActions()
     {
@@ -55,7 +59,7 @@ public class DefaultResponseActions implements IResponseActions
     @Memoized
     public IResponseAction failure(final String reason)
     {
-        new ErrorResponseAction(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, reason)
+        new ErrorResponseAction(reason)
     }
     
     @Memoized

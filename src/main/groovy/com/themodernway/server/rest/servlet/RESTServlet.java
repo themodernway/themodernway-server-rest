@@ -30,7 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpMethod;
 
 import com.themodernway.server.core.ITimeSupplier;
-import com.themodernway.server.core.file.FilePathUtils;
+import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
 import com.themodernway.server.core.json.binder.BinderType;
@@ -38,11 +38,10 @@ import com.themodernway.server.core.security.AuthorizationResult;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.security.session.IServerSessionHelper;
 import com.themodernway.server.core.servlet.HTTPServletBase;
+import com.themodernway.server.core.servlet.IResponseAction;
 import com.themodernway.server.rest.IRESTService;
-import com.themodernway.server.rest.IResponseAction;
 import com.themodernway.server.rest.RESTException;
 import com.themodernway.server.rest.RESTRequestContext;
-import com.themodernway.server.rest.RESTUtils;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
@@ -100,7 +99,7 @@ public class RESTServlet extends HTTPServletBase
 
     protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject params) throws ServletException, IOException
     {
-        String bind = RESTUtils.fixBinding(toTrimOrElse(request.getPathInfo(), FilePathUtils.SINGLE_SLASH));
+        String bind = FileAndPathUtils.fixPathBinding(toTrimOrElse(request.getPathInfo(), FileAndPathUtils.SINGLE_SLASH));
 
         if (null == bind)
         {

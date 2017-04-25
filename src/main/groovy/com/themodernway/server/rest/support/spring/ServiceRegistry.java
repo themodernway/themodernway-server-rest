@@ -31,8 +31,8 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.jmx.export.annotation.ManagedResource;
 
+import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.rest.IRESTService;
-import com.themodernway.server.rest.RESTUtils;
 
 /**
  * ServiceRegistry - Registry of all IRESTService services found in the application.
@@ -60,7 +60,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
     {
         if (null != service)
         {
-            final String bind = RESTUtils.fixBinding(service.getRequestBinding());
+            final String bind = FileAndPathUtils.fixPathBinding(service.getRequestBinding());
 
             if (null != bind)
             {
@@ -104,7 +104,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
     @Override
     public IRESTService getBinding(String bind, HttpMethod method)
     {
-        bind = RESTUtils.fixBinding(bind);
+        bind = FileAndPathUtils.fixPathBinding(bind);
 
         if (null != bind)
         {
@@ -116,7 +116,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
     @Override
     public boolean isBindingRegistered(String bind)
     {
-        bind = RESTUtils.fixBinding(bind);
+        bind = FileAndPathUtils.fixPathBinding(bind);
 
         if (null != bind)
         {
