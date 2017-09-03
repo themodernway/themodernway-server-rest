@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletContext;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -28,6 +27,7 @@ import org.springframework.http.HttpMethod;
 
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.security.session.IServerSession;
+import com.themodernway.server.core.servlet.HTTPUtils;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
@@ -47,7 +47,7 @@ public class RESTRequestContext implements IRESTRequestContext
 
     private final HttpServletResponse m_servlet_response;
 
-    public RESTRequestContext(IServerSession session, List<String> roles, ServletContext context, HttpServletRequest request, HttpServletResponse response, HttpMethod reqtyp)
+    public RESTRequestContext(final IServerSession session, final List<String> roles, final ServletContext context, final HttpServletRequest request, final HttpServletResponse response, final HttpMethod reqtyp)
     {
         m_reqtyp = reqtyp;
 
@@ -123,49 +123,9 @@ public class RESTRequestContext implements IRESTRequestContext
     }
 
     @Override
-    public void setCookie(String name, String value)
+    public void setCookie(final String name, final String value)
     {
-        HttpServletRequest request = getServletRequest();
-
-        HttpServletResponse response = getServletResponse();
-
-        if ((null != request) && (null != response) && (null != (name = toTrimOrNull(name))))
-        {
-            if (null == value)
-            {
-                Cookie cookie = new Cookie(name, "");
-
-                cookie.setMaxAge(0);
-
-                String ruri = request.getHeader("Referer");
-
-                if (null != ruri)
-                {
-                    if (ruri.startsWith("https"))
-                    {
-                        cookie.setSecure(true);
-                    }
-                }
-                response.addCookie(cookie);
-            }
-            else
-            {
-                Cookie cookie = new Cookie(name, value);
-
-                cookie.setMaxAge(60 * 60 * 24 * 365);// one year
-
-                String ruri = request.getHeader("Referer");
-
-                if (null != ruri)
-                {
-                    if (ruri.startsWith("https"))
-                    {
-                        cookie.setSecure(true);
-                    }
-                }
-                response.addCookie(cookie);
-            }
-        }
+        HTTPUtils.setCookie(getServletRequest(), getServletResponse(), name, value, null);
     }
 
     @Override
@@ -187,7 +147,7 @@ public class RESTRequestContext implements IRESTRequestContext
 
         if (null != sess)
         {
-            List<String> valu = sess.getRoles();
+            final List<String> valu = sess.getRoles();
 
             if ((null != valu) && (false == valu.isEmpty()))
             {
@@ -216,7 +176,7 @@ public class RESTRequestContext implements IRESTRequestContext
     }
 
     @Override
-    public void setMaxContentTypeLength(int max)
+    public void setMaxContentTypeLength(final int max)
     {
     }
 
@@ -227,7 +187,7 @@ public class RESTRequestContext implements IRESTRequestContext
 
         if (null != sess)
         {
-            toTrimOrElse(sess.getUserId(), UNKNOWN_USER);
+            return toTrimOrElse(sess.getUserId(), UNKNOWN_USER);
         }
         return UNKNOWN_USER;
     }

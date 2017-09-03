@@ -96,7 +96,7 @@ public class RESTServlet extends HTTPServletBase
 
     protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject params) throws ServletException, IOException
     {
-        String bind = FileAndPathUtils.fixPathBinding(toTrimOrElse(request.getPathInfo(), FileAndPathUtils.SINGLE_SLASH));
+        final String bind = FileAndPathUtils.fixPathBinding(toTrimOrElse(request.getPathInfo(), FileAndPathUtils.SINGLE_SLASH));
 
         if (null == bind)
         {
@@ -214,14 +214,14 @@ public class RESTServlet extends HTTPServletBase
                 writeBODY(HttpServletResponse.SC_OK, request, response, result);
             }
         }
-        catch (RESTException e)
+        catch (final RESTException e)
         {
             if (false == context.isClosed())
             {
                 errorBODY(e.getCode(), request, response, e.getReason());
             }
         }
-        catch (Throwable e)
+        catch (final Throwable e)
         {
             final String uuid = uuid();
 
@@ -271,13 +271,13 @@ public class RESTServlet extends HTTPServletBase
                 {
                     return BinderType.forContentType(request.getContentType()).getBinder().bindJSON(request.getInputStream());
                 }
-                catch (ParserException e)
+                catch (final ParserException e)
                 {
                     logger().error("ParserException", e);
 
                     return null;
                 }
-                catch (IOException e)
+                catch (final IOException e)
                 {
                     logger().error("IOException", e);
 
@@ -306,6 +306,10 @@ public class RESTServlet extends HTTPServletBase
         if (type.contains(CONTENT_TYPE_APPLICATION_JSON))
         {
             response.setContentType(CONTENT_TYPE_APPLICATION_JSON);
+        }
+        if (type.contains(CONTENT_TYPE_TEXT_PROPERTIES))
+        {
+            response.setContentType(CONTENT_TYPE_TEXT_PROPERTIES);
         }
         else if (type.contains(CONTENT_TYPE_TEXT_XML))
         {
@@ -345,7 +349,7 @@ public class RESTServlet extends HTTPServletBase
         {
             BinderType.forContentType(type).getBinder().setStrict(isStrict(request)).send(stream, output);
         }
-        catch (ParserException e)
+        catch (final ParserException e)
         {
             throw new IOException(e);
         }

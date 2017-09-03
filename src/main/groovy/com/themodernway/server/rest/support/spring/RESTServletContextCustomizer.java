@@ -23,26 +23,31 @@ import javax.servlet.ServletContext;
 
 import org.springframework.web.context.WebApplicationContext;
 
-import com.themodernway.server.core.support.spring.AbstractServletContextCustomizer;
+import com.themodernway.server.core.support.spring.IServletFactory;
+import com.themodernway.server.core.support.spring.ServletFactoryContextCustomizer;
 import com.themodernway.server.rest.servlet.RESTServlet;
 
-public class RESTServletContextCustomizer extends AbstractServletContextCustomizer
+public class RESTServletContextCustomizer extends ServletFactoryContextCustomizer implements IServletFactory
 {
     public RESTServletContextCustomizer(final String name, final String maps)
     {
         super(name, maps);
+
+        setServletFactory(this);
     }
 
     public RESTServletContextCustomizer(final String name, final Collection<String> maps)
     {
         super(name, maps);
+
+        setServletFactory(this);
     }
 
     @Override
-    protected Servlet doMakeServlet(final ServletContext sc, final WebApplicationContext context)
+    public Servlet make(final ServletContext sc, final WebApplicationContext context)
     {
         final RESTServlet inst = new RESTServlet();
-        
+
         inst.setRateLimit(getRateLimit());
 
         inst.setRequiredRoles(getRequiredRoles());

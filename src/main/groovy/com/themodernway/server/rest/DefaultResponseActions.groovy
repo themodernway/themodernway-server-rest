@@ -31,37 +31,37 @@ public class DefaultResponseActions
     public DefaultResponseActions()
     {
     }
-    
+
     @Memoized
     public IResponseAction redirect(final String path)
     {
         new RedirectResponseAction(path)
     }
-    
+
     @Memoized
     public IResponseAction forward(final String path)
     {
         new ForwardResponseAction(path)
     }
-    
+
     @Memoized
     public IResponseAction failure(final int code)
     {
         new ErrorResponseAction(code)
     }
-    
+
     @Memoized
     public IResponseAction failure(final int code, final String reason)
     {
         new ErrorResponseAction(code, reason)
     }
-    
+
     @Memoized
     public IResponseAction failure(final String reason)
     {
         new ErrorResponseAction(reason)
     }
-    
+
     @Memoized
     public IResponseAction code(final int code)
     {

@@ -50,7 +50,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
 
     public ServiceRegistry()
     {
-        for (HttpMethod method : HttpMethod.values())
+        for (final HttpMethod method : HttpMethod.values())
         {
             m_bindings.put(method.name(), new LinkedHashMap<String, IRESTService>());
         }
@@ -102,7 +102,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
     }
 
     @Override
-    public IRESTService getBinding(String bind, HttpMethod method)
+    public IRESTService getBinding(String bind, final HttpMethod method)
     {
         bind = FileAndPathUtils.fixPathBinding(bind);
 
@@ -136,7 +136,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
     {
         if (factory instanceof DefaultListableBeanFactory)
         {
-            for (IRESTService service : ((DefaultListableBeanFactory) factory).getBeansOfType(IRESTService.class).values())
+            for (final IRESTService service : ((DefaultListableBeanFactory) factory).getBeansOfType(IRESTService.class).values())
             {
                 addService(service);
             }
@@ -146,7 +146,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
     @Override
     public void close() throws IOException
     {
-        for (IRESTService service : getServices())
+        for (final IRESTService service : getServices())
         {
             if (null != service)
             {
@@ -154,7 +154,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
                 {
                     service.close();
                 }
-                catch (Exception e)
+                catch (final Exception e)
                 {
                     logger.error("ServiceRegistry.close().", e);
                 }

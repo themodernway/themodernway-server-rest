@@ -20,8 +20,6 @@ import org.springframework.http.HttpMethod
 
 import com.google.common.util.concurrent.RateLimiter
 import com.themodernway.server.core.file.FileAndPathUtils
-import com.themodernway.server.core.json.JSONObject
-import com.themodernway.server.core.json.schema.JSONSchema
 import com.themodernway.server.rest.support.RESTSupport
 
 import groovy.transform.CompileStatic
@@ -70,30 +68,6 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
         HttpMethod.GET
     }
 
-    @Override
-    public JSONObject getSchemas()
-    {
-        json(request: getRequestSchema(), response: getResponseSchema())
-    }
-
-    @Override
-    public JSONSchema getRequestSchema()
-    {
-        jsonSchema(type: 'object', properties: [:])
-    }
-
-    @Override
-    public JSONSchema getResponseSchema()
-    {
-        jsonSchema(type: 'object', properties: [:])
-    }
-
-    @Override
-    public JSONObject getSwaggerAttributes()
-    {
-        json(path: getRequestBinding(), method: getRequestMethodType().name(), schemas: getSchemas())
-    }
-    
     @Memoized
     public DefaultResponseActions responses()
     {
