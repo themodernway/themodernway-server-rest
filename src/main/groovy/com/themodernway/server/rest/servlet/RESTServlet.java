@@ -18,6 +18,7 @@ package com.themodernway.server.rest.servlet;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -26,12 +27,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 
+import com.themodernway.server.core.ICoreCommon;
 import com.themodernway.server.core.ITimeSupplier;
 import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
 import com.themodernway.server.core.json.binder.BinderType;
-import com.themodernway.server.core.security.AuthorizationResult;
+import com.themodernway.server.core.security.IAuthorizationResult;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.security.session.IServerSessionHelper;
 import com.themodernway.server.core.servlet.HTTPServletBase;
@@ -45,6 +47,8 @@ import com.themodernway.server.rest.support.spring.RESTContextInstance;
 @SuppressWarnings("serial")
 public class RESTServlet extends HTTPServletBase
 {
+    private List<String> m_tags = new ArrayList<String>();
+
     public RESTServlet()
     {
     }
@@ -127,6 +131,35 @@ public class RESTServlet extends HTTPServletBase
                 return;
             }
         }
+        final List<String> tags = getTags();
+
+        if ((null != tags) && (false == tags.isEmpty()))
+        {
+            boolean find = false;
+
+            final List<String> vals = ICoreCommon.toTaggingValues(service);
+
+            if (null != vals)
+            {
+                for (final String valu : vals)
+                {
+                    if (tags.contains(valu))
+                    {
+                        find = true;
+
+                        break;
+                    }
+                }
+            }
+            if (false == find)
+            {
+                logger().error(format("service (%s) for tags not found (%s).", bind, toPrintableString(tags)));
+
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+
+                return;
+            }
+        }
         if (type != service.getRequestMethodType())
         {
             logger().error(format("service (%s) not type (%s).", bind, type));
@@ -147,7 +180,7 @@ public class RESTServlet extends HTTPServletBase
         {
             uroles = getDefaultRoles(request);
         }
-        final AuthorizationResult auth = isAuthorized(request, session, service, uroles);
+        final IAuthorizationResult auth = isAuthorized(request, session, service, uroles);
 
         if (false == auth.isAuthorized())
         {
@@ -359,5 +392,36 @@ public class RESTServlet extends HTTPServletBase
     protected IRESTContext getRESTContext()
     {
         return RESTContextInstance.getRESTContextInstance();
+    }
+
+    public void setTags(final List<String> tags)
+    {
+        if (null != tags)
+        {
+            m_tags = toUniqueStringList(tags);
+        }
+        else
+        {
+            logger().error("null tags ignored");
+        }
+    }
+
+    public void setTags(String tags)
+    {
+        tags = this.toTrimOrNull(tags);
+
+        if (null != tags)
+        {
+            m_tags = toUniqueTokenStringList(tags);
+        }
+        else
+        {
+            logger().error("null or empty tags ignored");
+        }
+    }
+
+    public List<String> getTags()
+    {
+        return toUnmodifiableList(m_tags);
     }
 }

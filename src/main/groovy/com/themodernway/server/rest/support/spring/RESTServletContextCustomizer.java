@@ -16,7 +16,9 @@
 
 package com.themodernway.server.rest.support.spring;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
@@ -24,11 +26,14 @@ import javax.servlet.ServletContext;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.themodernway.server.core.support.spring.IServletFactory;
+import com.themodernway.server.core.support.spring.IServletFactoryContextCustomizer;
 import com.themodernway.server.core.support.spring.ServletFactoryContextCustomizer;
 import com.themodernway.server.rest.servlet.RESTServlet;
 
 public class RESTServletContextCustomizer extends ServletFactoryContextCustomizer implements IServletFactory
 {
+    private List<String> m_tags = new ArrayList<String>();
+
     public RESTServletContextCustomizer(final String name, final String maps)
     {
         super(name, maps);
@@ -43,10 +48,43 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
         setServletFactory(this);
     }
 
+    public void setTags(final List<String> tags)
+    {
+        if (null != tags)
+        {
+            m_tags = toUniqueStringList(tags);
+        }
+        else
+        {
+            logger().error("null tags ignored");
+        }
+    }
+
+    public void setTags(String tags)
+    {
+        tags = this.toTrimOrNull(tags);
+
+        if (null != tags)
+        {
+            m_tags = toUniqueTokenStringList(tags);
+        }
+        else
+        {
+            logger().error("null or empty tags ignored");
+        }
+    }
+
+    public List<String> getTags()
+    {
+        return toUnmodifiableList(m_tags);
+    }
+
     @Override
-    public Servlet make(final ServletContext sc, final WebApplicationContext context)
+    public Servlet make(final IServletFactoryContextCustomizer customizer, final ServletContext sc, final WebApplicationContext context)
     {
         final RESTServlet inst = new RESTServlet();
+
+        inst.setTags(getTags());
 
         inst.setRateLimit(getRateLimit());
 

@@ -34,9 +34,6 @@ import org.springframework.jmx.export.annotation.ManagedResource;
 import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.rest.IRESTService;
 
-/**
- * ServiceRegistry - Registry of all IRESTService services found in the application.
- */
 @ManagedResource
 public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
 {

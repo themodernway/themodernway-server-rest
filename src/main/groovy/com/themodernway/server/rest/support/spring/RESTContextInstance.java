@@ -17,10 +17,10 @@
 package com.themodernway.server.rest.support.spring;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.springframework.http.HttpMethod;
 
+import com.themodernway.common.api.java.util.CommonOps;
 import com.themodernway.server.core.support.spring.ServerContextInstance;
 import com.themodernway.server.rest.IRESTService;
 
@@ -40,19 +40,19 @@ public class RESTContextInstance extends ServerContextInstance implements IRESTC
     @Override
     public IServiceRegistry getServiceRegistry()
     {
-        return Objects.requireNonNull(getBeanSafely("RESTServiceRegistry", IServiceRegistry.class), "RESTServiceRegistry is null, initialization error.");
+        return CommonOps.requireNonNull(getBeanSafely("RESTServiceRegistry", IServiceRegistry.class), "RESTServiceRegistry is null, initialization error.");
     }
 
     @Override
     public IRESTService getBinding(final String bind, final HttpMethod method)
     {
-        return getServiceRegistry().getBinding(Objects.requireNonNull(bind), Objects.requireNonNull(method));
+        return getServiceRegistry().getBinding(CommonOps.requireNonNull(bind), CommonOps.requireNonNull(method));
     }
-    
+
     @Override
     public boolean isBindingRegistered(final String bind)
     {
-        return getServiceRegistry().isBindingRegistered(Objects.requireNonNull(bind));
+        return getServiceRegistry().isBindingRegistered(CommonOps.requireNonNull(bind));
     }
 
     @Override
