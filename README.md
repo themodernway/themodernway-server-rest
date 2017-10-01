@@ -28,6 +28,18 @@ Javadoc URL:
 
 http://docs.themodernway.com/documents/javadoc/themodernway-server-rest/
 
+Check Style URL:
+
+http://docs.themodernway.com/documents/reports/themodernway-server-rest/checkstyle/main.html
+
+PMD URL:
+
+http://docs.themodernway.com/documents/reports/themodernway-server-rest/pmd/main.html
+
+FindBugs URL:
+
+http://docs.themodernway.com/documents/reports/themodernway-server-rest/findbugs/main.html
+
 License:
 
 Copyright (c) 2017 The Modern Way. All rights reserved.
