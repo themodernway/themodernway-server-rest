@@ -296,9 +296,9 @@ public class RESTServlet extends HTTPServletBase
     {
         if (type != HttpMethod.GET)
         {
-            final int leng = request.getContentLength();
+            final long leng = request.getContentLengthLong();
 
-            if (leng > 0)
+            if (leng > 0L)
             {
                 try
                 {
@@ -317,7 +317,7 @@ public class RESTServlet extends HTTPServletBase
                     return null;
                 }
             }
-            if (leng == 0)
+            if (leng == 0L)
             {
                 return new JSONObject();
             }
