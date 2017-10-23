@@ -17,6 +17,7 @@
 package com.themodernway.server.rest;
 
 import java.io.Closeable;
+import java.util.List;
 
 import org.springframework.http.HttpMethod;
 
@@ -26,6 +27,10 @@ import com.themodernway.server.core.limiting.IRateLimited;
 public interface IRESTService extends IRateLimited, Closeable
 {
     public String getRequestBinding();
+
+    public long getMaxRequestBodySize();
+
+    public List<String> getTaggigValues();
 
     public HttpMethod getRequestMethodType();
 

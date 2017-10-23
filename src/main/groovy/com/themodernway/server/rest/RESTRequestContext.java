@@ -16,10 +16,13 @@
 
 package com.themodernway.server.rest;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,33 +36,37 @@ import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
 public class RESTRequestContext implements IRESTRequestContext
 {
-    private final AtomicBoolean       m_closed = new AtomicBoolean(false);
+    private final AtomicBoolean       m_is_open = new AtomicBoolean(true);
 
-    private final HttpMethod          m_reqtyp;
+    private final List<String>        m_rolesof;
 
-    private final List<String>        m_roles;
+    private final HttpMethod          m_reqtype;
 
     private final IServerSession      m_session;
+
+    private final IRESTService        m_service;
 
     private final ServletContext      m_servlet_context;
 
     private final HttpServletRequest  m_servlet_request;
 
-    private final HttpServletResponse m_servlet_response;
+    private final HttpServletResponse m_servlet_respons;
 
-    public RESTRequestContext(final IServerSession session, final List<String> roles, final ServletContext context, final HttpServletRequest request, final HttpServletResponse response, final HttpMethod reqtyp)
+    public RESTRequestContext(final IRESTService service, final IServerSession session, final List<String> rolesof, final ServletContext context, final HttpServletRequest request, final HttpServletResponse respons, final HttpMethod reqtype)
     {
-        m_reqtyp = reqtyp;
+        m_service = service;
+
+        m_reqtype = reqtype;
 
         m_session = session;
 
-        m_roles = toUnmodifiableList(roles);
+        m_rolesof = toUnmodifiableList(toUniqueStringList(rolesof));
 
         m_servlet_context = context;
 
         m_servlet_request = request;
 
-        m_servlet_response = response;
+        m_servlet_respons = respons;
     }
 
     @Override
@@ -95,7 +102,7 @@ public class RESTRequestContext implements IRESTRequestContext
     @Override
     public HttpMethod getRequestType()
     {
-        return m_reqtyp;
+        return m_reqtype;
     }
 
     @Override
@@ -119,13 +126,31 @@ public class RESTRequestContext implements IRESTRequestContext
     @Override
     public HttpServletResponse getServletResponse()
     {
-        return m_servlet_response;
+        return m_servlet_respons;
     }
 
     @Override
-    public void setCookie(final String name, final String value)
+    public Cookie setCookie(final String name, final String value)
     {
-        HTTPUtils.setCookie(getServletRequest(), getServletResponse(), name, value, null);
+        return setCookie(name, value, null);
+    }
+
+    @Override
+    public Cookie setCookie(final String name, final String value, final String path)
+    {
+        return HTTPUtils.setCookie(getServletRequest(), getServletResponse(), name, value, path);
+    }
+
+    @Override
+    public Cookie setCookie(final String name, final String value, final TimeUnit unit, final long duration)
+    {
+        return setCookie(name, value, null, unit, duration);
+    }
+
+    @Override
+    public Cookie setCookie(final String name, final String value, final String path, final TimeUnit unit, final long duration)
+    {
+        return HTTPUtils.setCookie(getServletRequest(), getServletResponse(), name, value, path, unit, duration);
     }
 
     @Override
@@ -154,19 +179,19 @@ public class RESTRequestContext implements IRESTRequestContext
                 return toUnmodifiableList(valu);
             }
         }
-        return m_roles;
+        return m_rolesof;
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
-        m_closed.set(true);
+        m_is_open.set(false);
     }
 
     @Override
-    public boolean isClosed()
+    public boolean isOpen()
     {
-        return m_closed.get();
+        return m_is_open.get();
     }
 
     @Override
@@ -190,5 +215,11 @@ public class RESTRequestContext implements IRESTRequestContext
             return toTrimOrElse(sess.getUserId(), UNKNOWN_USER);
         }
         return UNKNOWN_USER;
+    }
+
+    @Override
+    public IRESTService getService()
+    {
+        return m_service;
     }
 }

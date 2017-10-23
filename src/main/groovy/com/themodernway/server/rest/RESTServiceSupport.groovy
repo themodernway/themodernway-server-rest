@@ -19,6 +19,7 @@ package com.themodernway.server.rest
 import org.springframework.http.HttpMethod
 
 import com.google.common.util.concurrent.RateLimiter
+import com.themodernway.server.core.ICoreCommon
 import com.themodernway.server.core.file.FileAndPathUtils
 import com.themodernway.server.rest.support.RESTSupport
 
@@ -42,6 +43,24 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
         {
             m_ratelimit.acquire()
         }
+    }
+
+    @Memoized
+    public List<String> getTaggigValues()
+    {
+        ICoreCommon.toTaggingValues(this)
+    }
+
+    @Memoized
+    public long getMaxRequestBodySize()
+    {
+        final Class<?> claz = getClass()
+
+        if (claz.isAnnotationPresent(MaxRequestBodySize))
+        {
+            return claz.getAnnotation(MaxRequestBodySize).value()
+        }
+        0L
     }
 
     @Memoized

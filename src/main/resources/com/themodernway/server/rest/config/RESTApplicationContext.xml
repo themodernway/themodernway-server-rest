@@ -41,6 +41,6 @@
 		<property name="buildModuleVersion" value="@GRADLE_BUILD_ARTIFACT_ID@-@GRADLE_BUILD_MODULE_VERSION@.jar"/>
 	</bean>
 
-	<bean id="RESTServiceRegistry" class="com.themodernway.server.rest.support.spring.ServiceRegistry" destroy-method="close"/>
+	<bean id="RESTServiceRegistry" class="com.themodernway.server.rest.support.spring.RESTServiceRegistry" destroy-method="close"/>
 
 </beans>

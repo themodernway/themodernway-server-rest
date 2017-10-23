@@ -17,8 +17,7 @@
 package com.themodernway.server.rest.servlet;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
+import java.io.PrintWriter;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -27,9 +26,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 
-import com.themodernway.server.core.ICoreCommon;
 import com.themodernway.server.core.ITimeSupplier;
 import com.themodernway.server.core.file.FileAndPathUtils;
+import com.themodernway.server.core.io.IO;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
 import com.themodernway.server.core.json.binder.BinderType;
@@ -38,16 +37,24 @@ import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.security.session.IServerSessionHelper;
 import com.themodernway.server.core.servlet.HTTPServletBase;
 import com.themodernway.server.core.servlet.IResponseAction;
+import com.themodernway.server.rest.IRESTRequestContext;
 import com.themodernway.server.rest.IRESTService;
 import com.themodernway.server.rest.RESTException;
 import com.themodernway.server.rest.RESTRequestContext;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
-@SuppressWarnings("serial")
 public class RESTServlet extends HTTPServletBase
 {
-    private List<String> m_tags = new ArrayList<String>();
+    private static final long            serialVersionUID = 1L;
+
+    private long                         m_size           = 0L;
+
+    private List<String>                 m_tags           = arrayList();
+
+    protected static final ITimeSupplier TIMER_MILLS      = ITimeSupplier.mills();
+
+    protected static final ITimeSupplier TIMER_NANOS      = ITimeSupplier.nanos();
 
     public RESTServlet()
     {
@@ -63,7 +70,7 @@ public class RESTServlet extends HTTPServletBase
     {
         doNeverCache(request, response);
 
-        response.setContentLength(0);
+        response.setContentLengthLong(0L);
 
         response.setStatus(HttpServletResponse.SC_OK);
     }
@@ -98,7 +105,7 @@ public class RESTServlet extends HTTPServletBase
         doService(request, response, true, HttpMethod.DELETE, null);
     }
 
-    protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject params) throws ServletException, IOException
+    protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject body) throws ServletException, IOException
     {
         final String bind = FileAndPathUtils.fixPathBinding(toTrimOrElse(request.getPathInfo(), FileAndPathUtils.SINGLE_SLASH));
 
@@ -106,7 +113,7 @@ public class RESTServlet extends HTTPServletBase
         {
             logger().error("empty service path found.");
 
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 
             return;
         }
@@ -137,7 +144,7 @@ public class RESTServlet extends HTTPServletBase
         {
             boolean find = false;
 
-            final List<String> vals = ICoreCommon.toTaggingValues(service);
+            final List<String> vals = service.getTaggigValues();
 
             if (null != vals)
             {
@@ -184,7 +191,7 @@ public class RESTServlet extends HTTPServletBase
 
         if (false == auth.isAuthorized())
         {
-            logger().error(format("service authorization failed for (%s) reason (%s).", bind, auth.getText()));
+            logger().error(format("service authorization failed for (%s) type (%s) reason (%s).", bind, type, auth.getText()));
 
             response.addHeader(WWW_AUTHENTICATE, "unauthorized");
 
@@ -194,33 +201,35 @@ public class RESTServlet extends HTTPServletBase
         }
         if (read)
         {
-            params = parseBODY(request, type);
+            body = parseBODY(service, request, response, type, bind);
         }
-        if (null == params)
+        if (null == body)
         {
-            logger().error("body is null.");
+            if (response.getStatus() == HttpServletResponse.SC_OK)
+            {
+                logger().error(format("service (%s) type (%s) null body.", bind, type));
 
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
             return;
         }
-        params = clean(params, false);
+        body = clean(body, false);
 
-        final RESTRequestContext context = new RESTRequestContext(session, uroles, getServletContext(), request, response, type);
+        final IRESTRequestContext context = new RESTRequestContext(service, session, uroles, getServletContext(), request, response, type);
 
         try
         {
             service.acquire();
 
-            final long mills = ITimeSupplier.mills().getTime();
+            final long mills = TIMER_MILLS.getTime();
 
-            final long nanos = ITimeSupplier.nanos().getTime();
+            final long nanos = TIMER_NANOS.getTime();
 
-            final Object object = service.call(context, params);
+            final Object object = service.call(context, body);
 
-            final long ndiff = ITimeSupplier.nanos().getTime() - nanos;
+            final long ndiff = TIMER_NANOS.getTime() - nanos;
 
-            final long mdiff = ITimeSupplier.mills().getTime() - mills;
+            final long mdiff = TIMER_MILLS.getTime() - mills;
 
             if (mdiff < 1)
             {
@@ -230,28 +239,36 @@ public class RESTServlet extends HTTPServletBase
             {
                 logger().info(format("calling service (%s) took (%s) mills.", bind, mdiff));
             }
-            if (object instanceof IResponseAction)
+            if (context.isOpen())
             {
-                ((IResponseAction) object).call(request, response);
+                if (object instanceof IResponseAction)
+                {
+                    ((IResponseAction) object).call(request, response);
 
-                return;
-            }
-            JSONObject result = json(object);
+                    return;
+                }
+                JSONObject result = json(object);
 
-            if (null != result)
-            {
-                result = clean(result, true);
+                if (null != result)
+                {
+                    result = clean(result, true);
+                }
+                writeBODY(HttpServletResponse.SC_OK, context, request, response, result);
             }
-            if (false == context.isClosed())
+            else
             {
-                writeBODY(HttpServletResponse.SC_OK, request, response, result);
+                logger().error(format("calling service (%s) context closed.", bind));
             }
         }
         catch (final RESTException e)
         {
-            if (false == context.isClosed())
+            if (context.isOpen())
             {
-                errorBODY(e.getCode(), request, response, e.getReason());
+                errorBODY(e.getCode(), context, request, response, e.getReason());
+            }
+            else
+            {
+                logger().error(format("calling service (%s) context closed.", bind));
             }
         }
         catch (final Throwable e)
@@ -292,7 +309,7 @@ public class RESTServlet extends HTTPServletBase
         return Boolean.parseBoolean(toTrimOrNull(request.getHeader(X_STRICT_JSON_FORMAT_HEADER)));
     }
 
-    protected JSONObject parseBODY(final HttpServletRequest request, final HttpMethod type)
+    protected JSONObject parseBODY(final IRESTService service, final HttpServletRequest request, final HttpServletResponse response, final HttpMethod type, final String bind)
     {
         if (type != HttpMethod.GET)
         {
@@ -300,19 +317,47 @@ public class RESTServlet extends HTTPServletBase
 
             if (leng > 0L)
             {
+                long size = service.getMaxRequestBodySize();
+
+                if (false == (size > 0L))
+                {
+                    size = getMaxRequestBodySize();
+                }
+                if ((size > 0L) && (leng > size))
+                {
+                    logger().error(format("error calling (%s) length (%d) greater than (%d).", bind, leng, size));
+
+                    response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
+
+                    return null;
+                }
                 try
                 {
-                    return BinderType.forContentType(request.getContentType()).getBinder().bindJSON(request.getInputStream());
+                    if (size > 0L)
+                    {
+                        final String buff = IO.getStringAtMost(request.getReader(), size);
+
+                        if (buff.length() > size)
+                        {
+                            logger().error(format("error calling (%s) length (%d) greater than (%d).", bind, buff.length(), size));
+
+                            response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
+
+                            return null;
+                        }
+                        return BinderType.forContentType(request.getContentType()).getBinder().bindJSON(buff);
+                    }
+                    return BinderType.forContentType(request.getContentType()).getBinder().bindJSON(request.getReader());
                 }
                 catch (final ParserException e)
                 {
-                    logger().error("ParserException", e);
+                    logger().error(format("error calling (%s) ParserException.", bind), e);
 
                     return null;
                 }
                 catch (final IOException e)
                 {
-                    logger().error("IOException", e);
+                    logger().error(format("error calling (%s) IOException.", bind), e);
 
                     return null;
                 }
@@ -325,12 +370,12 @@ public class RESTServlet extends HTTPServletBase
         return new JSONObject();
     }
 
-    protected void errorBODY(final int code, final HttpServletRequest request, final HttpServletResponse response, final String reason) throws IOException
+    protected void errorBODY(final int code, final IRESTRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String reason) throws IOException
     {
-        writeBODY(code, request, response, new JSONObject("error", new JSONObject("code", code).set("reason", reason)));
+        writeBODY(code, context, request, response, new JSONObject("error", new JSONObject("code", code).set("reason", reason)));
     }
 
-    protected void writeBODY(final int code, final HttpServletRequest request, final HttpServletResponse response, final JSONObject output) throws IOException
+    protected void writeBODY(final int code, final IRESTRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final JSONObject output) throws IOException
     {
         doNeverCache(request, response);
 
@@ -366,7 +411,7 @@ public class RESTServlet extends HTTPServletBase
         }
         if (null == output)
         {
-            response.setContentLength(0);
+            response.setContentLengthLong(0L);
 
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
 
@@ -374,7 +419,7 @@ public class RESTServlet extends HTTPServletBase
         }
         response.setStatus(code);
 
-        final OutputStream stream = response.getOutputStream();
+        final PrintWriter stream = response.getWriter();
 
         stream.flush();
 
@@ -408,7 +453,7 @@ public class RESTServlet extends HTTPServletBase
 
     public void setTags(String tags)
     {
-        tags = this.toTrimOrNull(tags);
+        tags = toTrimOrNull(tags);
 
         if (null != tags)
         {
@@ -423,5 +468,15 @@ public class RESTServlet extends HTTPServletBase
     public List<String> getTags()
     {
         return toUnmodifiableList(m_tags);
+    }
+
+    public void setMaxRequestBodySize(final long size)
+    {
+        m_size = size;
+    }
+
+    public long getMaxRequestBodySize()
+    {
+        return m_size;
     }
 }

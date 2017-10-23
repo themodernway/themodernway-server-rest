@@ -16,9 +16,12 @@
 
 package com.themodernway.server.rest;
 
+import java.io.Closeable;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -29,8 +32,10 @@ import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.servlet.IServletCommonOperations;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 
-public interface IRESTRequestContext extends IServletCommonOperations, AutoCloseable
+public interface IRESTRequestContext extends IServletCommonOperations, Closeable
 {
+    public IRESTService getService();
+
     public IServerSession getSession();
 
     public JSONObject getJSONHeaders();
@@ -59,7 +64,13 @@ public interface IRESTRequestContext extends IServletCommonOperations, AutoClose
 
     public boolean isPut();
 
-    public void setCookie(String name, String value);
+    public Cookie setCookie(String name, String value);
 
-    public boolean isClosed();
+    public Cookie setCookie(String name, String value, String path);
+
+    public Cookie setCookie(String name, String value, TimeUnit unit, long duration);
+
+    public Cookie setCookie(String name, String value, String path, TimeUnit unit, long duration);
+
+    public boolean isOpen();
 }

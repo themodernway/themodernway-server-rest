@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package com.themodernway.server.rest;
+package com.themodernway.server.rest.support.spring;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.io.Closeable;
+import java.util.List;
 
-@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE })
-@Retention(RetentionPolicy.RUNTIME)
-public @interface RequestBinding
+import org.springframework.http.HttpMethod;
+
+import com.themodernway.server.rest.IRESTService;
+
+public interface IRESTServiceRegistry extends Closeable
 {
-    String value() default "";
+    public boolean doBindRESTService(IRESTService service);
+
+    public IRESTService getBinding(String bind, HttpMethod method);
+
+    public boolean isBindingRegistered(String bind);
+
+    public List<IRESTService> getRESTServices();
 }

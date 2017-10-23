@@ -29,15 +29,13 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.http.HttpMethod;
-import org.springframework.jmx.export.annotation.ManagedResource;
 
 import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.rest.IRESTService;
 
-@ManagedResource
-public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
+public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAware
 {
-    private static final Logger                                              logger     = Logger.getLogger(ServiceRegistry.class);
+    private static final Logger                                              logger     = Logger.getLogger(RESTServiceRegistry.class);
 
     private final HashSet<String>                                            m_valpaths = new HashSet<String>();
 
@@ -45,7 +43,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
 
     private final LinkedHashMap<String, LinkedHashMap<String, IRESTService>> m_bindings = new LinkedHashMap<String, LinkedHashMap<String, IRESTService>>();
 
-    public ServiceRegistry()
+    public RESTServiceRegistry()
     {
         for (final HttpMethod method : HttpMethod.values())
         {
@@ -53,7 +51,8 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
         }
     }
 
-    protected void addService(final IRESTService service)
+    @Override
+    public boolean doBindRESTService(final IRESTService service)
     {
         if (null != service)
         {
@@ -75,27 +74,30 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
 
                         find.put(bind, service);
 
-                        logger.info("ServiceRegistry.addService(" + bind + "," + method.name() + ") registered.");
+                        logger.info("RESTServiceRegistry.addService(" + bind + "," + method.name() + ") registered.");
+
+                        return true;
                     }
                     else
                     {
-                        logger.error("ServiceRegistry.addService(" + bind + "," + method.name() + ") ignored.");
+                        logger.error("RESTServiceRegistry.addService(" + bind + "," + method.name() + ") ignored.");
                     }
                 }
                 else
                 {
-                    logger.error("ServiceRegistry.addService(" + bind + ") null type.");
+                    logger.error("RESTServiceRegistry.addService(" + bind + ") null type.");
                 }
             }
             else
             {
-                logger.error("ServiceRegistry.addService() null binding.");
+                logger.error("RESTServiceRegistry.addService() null binding.");
             }
         }
         else
         {
-            logger.error("ServiceRegistry.addService() null service.");
+            logger.error("RESTServiceRegistry.addService() null service.");
         }
+        return false;
     }
 
     @Override
@@ -123,7 +125,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
     }
 
     @Override
-    public List<IRESTService> getServices()
+    public List<IRESTService> getRESTServices()
     {
         return Collections.unmodifiableList(m_services);
     }
@@ -135,7 +137,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
         {
             for (final IRESTService service : ((DefaultListableBeanFactory) factory).getBeansOfType(IRESTService.class).values())
             {
-                addService(service);
+                doBindRESTService(service);
             }
         }
     }
@@ -143,7 +145,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
     @Override
     public void close() throws IOException
     {
-        for (final IRESTService service : getServices())
+        for (final IRESTService service : getRESTServices())
         {
             if (null != service)
             {
@@ -153,7 +155,7 @@ public class ServiceRegistry implements IServiceRegistry, BeanFactoryAware
                 }
                 catch (final Exception e)
                 {
-                    logger.error("ServiceRegistry.close().", e);
+                    logger.error("RESTServiceRegistry.close().", e);
                 }
             }
         }

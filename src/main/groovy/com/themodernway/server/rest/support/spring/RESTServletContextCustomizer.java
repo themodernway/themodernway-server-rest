@@ -16,7 +16,6 @@
 
 package com.themodernway.server.rest.support.spring;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -32,7 +31,9 @@ import com.themodernway.server.rest.servlet.RESTServlet;
 
 public class RESTServletContextCustomizer extends ServletFactoryContextCustomizer implements IServletFactory
 {
-    private List<String> m_tags = new ArrayList<String>();
+    private long         m_size = 0L;
+
+    private List<String> m_tags = arrayList();
 
     public RESTServletContextCustomizer(final String name, final String maps)
     {
@@ -62,7 +63,7 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
 
     public void setTags(String tags)
     {
-        tags = this.toTrimOrNull(tags);
+        tags = toTrimOrNull(tags);
 
         if (null != tags)
         {
@@ -79,6 +80,16 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
         return toUnmodifiableList(m_tags);
     }
 
+    public void setMaxRequestBodySize(final long size)
+    {
+        m_size = size;
+    }
+
+    public long getMaxRequestBodySize()
+    {
+        return m_size;
+    }
+
     @Override
     public Servlet make(final IServletFactoryContextCustomizer customizer, final ServletContext sc, final WebApplicationContext context)
     {
@@ -89,6 +100,8 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
         inst.setRateLimit(getRateLimit());
 
         inst.setRequiredRoles(getRequiredRoles());
+
+        inst.setMaxRequestBodySize(getMaxRequestBodySize());
 
         return inst;
     }

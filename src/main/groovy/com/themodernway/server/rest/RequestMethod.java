@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
 
 import org.springframework.http.HttpMethod;
 
-@Target(ElementType.TYPE)
+@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequestMethod
 {

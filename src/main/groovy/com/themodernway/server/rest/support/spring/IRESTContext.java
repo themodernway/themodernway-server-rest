@@ -16,8 +16,6 @@
 
 package com.themodernway.server.rest.support.spring;
 
-import java.util.List;
-
 import org.springframework.http.HttpMethod;
 
 import com.themodernway.server.core.support.spring.IServerContext;
@@ -29,7 +27,5 @@ public interface IRESTContext extends IServerContext
 
     public boolean isBindingRegistered(String bind);
 
-    public IServiceRegistry getServiceRegistry();
-
-    public List<IRESTService> getServices();
+    public IRESTServiceRegistry getRESTServiceRegistry();
 }

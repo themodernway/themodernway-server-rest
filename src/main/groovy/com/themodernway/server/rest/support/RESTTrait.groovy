@@ -20,7 +20,7 @@ import org.springframework.http.HttpMethod
 
 import com.themodernway.server.rest.IRESTService
 import com.themodernway.server.rest.support.spring.IRESTContext
-import com.themodernway.server.rest.support.spring.IServiceRegistry
+import com.themodernway.server.rest.support.spring.IRESTServiceRegistry
 import com.themodernway.server.rest.support.spring.RESTContextInstance
 
 import groovy.transform.CompileStatic
@@ -36,26 +36,18 @@ public trait RESTTrait
     }
 
     @Memoized
-    public IServiceRegistry getServiceRegistry()
+    public IRESTServiceRegistry getRESTServiceRegistry()
     {
-        getRESTContext().getServiceRegistry()
+        getRESTContext().getRESTServiceRegistry()
     }
 
-    @Memoized
     public IRESTService getBinding(String bind, HttpMethod method)
     {
-        getServiceRegistry().getBinding(bind, method)
+        getRESTServiceRegistry().getBinding(bind, method)
     }
 
-    @Memoized
-    public List<IRESTService> getServices()
-    {
-        getServiceRegistry().getServices()
-    }
-
-    @Memoized
     public boolean isBindingRegistered(String bind)
     {
-        getServiceRegistry().isBindingRegistered(bind)
+        getRESTServiceRegistry().isBindingRegistered(bind)
     }
 }
