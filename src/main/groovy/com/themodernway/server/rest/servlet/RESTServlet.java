@@ -35,6 +35,7 @@ import com.themodernway.server.core.json.binder.BinderType;
 import com.themodernway.server.core.security.IAuthorizationResult;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.security.session.IServerSessionHelper;
+import com.themodernway.server.core.servlet.DefaultHeaderNameSessionIDFromRequestExtractor;
 import com.themodernway.server.core.servlet.HTTPServletBase;
 import com.themodernway.server.core.servlet.IResponseAction;
 import com.themodernway.server.rest.IRESTRequestContext;
@@ -177,7 +178,7 @@ public class RESTServlet extends HTTPServletBase
         }
         List<String> uroles = arrayList();
 
-        final IServerSession session = getSession(request);
+        final IServerSession session = getSession(requireNonNullOrElse(getSessionIDFromRequestExtractor(), DefaultHeaderNameSessionIDFromRequestExtractor.DEFAULT).getSessionID(request));
 
         if (null != session)
         {
