@@ -24,6 +24,7 @@ import javax.servlet.ServletContext;
 
 import org.springframework.web.context.WebApplicationContext;
 
+import com.themodernway.server.core.servlet.ISessionIDFromRequestExtractor;
 import com.themodernway.server.core.support.spring.IServletFactory;
 import com.themodernway.server.core.support.spring.IServletFactoryContextCustomizer;
 import com.themodernway.server.core.support.spring.ServletFactoryContextCustomizer;
@@ -95,6 +96,12 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
     {
         final RESTServlet inst = new RESTServlet();
 
+        final ISessionIDFromRequestExtractor extr = customizer.getSessionIDFromRequestExtractor();
+
+        if (null != extr)
+        {
+            inst.setSessionIDFromRequestExtractor(extr);
+        }
         inst.setTags(getTags());
 
         inst.setRateLimit(getRateLimit());
