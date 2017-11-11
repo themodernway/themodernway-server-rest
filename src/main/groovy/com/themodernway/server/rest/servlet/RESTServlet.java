@@ -444,7 +444,7 @@ public class RESTServlet extends HTTPServletBase
     {
         if (null != tags)
         {
-            m_tags = toUniqueStringList(tags);
+            m_tags = toUnique(tags);
         }
         else
         {

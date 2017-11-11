@@ -54,7 +54,7 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
     {
         if (null != tags)
         {
-            m_tags = toUniqueStringList(tags);
+            m_tags = toUnique(tags);
         }
         else
         {

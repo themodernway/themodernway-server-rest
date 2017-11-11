@@ -60,7 +60,7 @@ public class RESTRequestContext implements IRESTRequestContext
 
         m_session = session;
 
-        m_rolesof = toUnmodifiableList(toUniqueStringList(rolesof));
+        m_rolesof = toUnmodifiableList(toUnique(rolesof));
 
         m_servlet_context = context;
 
