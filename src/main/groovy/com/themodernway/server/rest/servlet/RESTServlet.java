@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 
-import com.themodernway.server.core.ITimeSupplier;
+import com.themodernway.server.core.NanoTimer;
 import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.core.io.IO;
 import com.themodernway.server.core.json.JSONObject;
@@ -47,15 +47,11 @@ import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
 public class RESTServlet extends HTTPServletBase
 {
-    private static final long            serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-    private long                         m_size           = 0L;
+    private long              m_size           = 0L;
 
-    private List<String>                 m_tags           = arrayList();
-
-    protected static final ITimeSupplier TIMER_MILLS      = ITimeSupplier.mills();
-
-    protected static final ITimeSupplier TIMER_NANOS      = ITimeSupplier.nanos();
+    private List<String>      m_tags           = arrayList();
 
     public RESTServlet()
     {
@@ -222,24 +218,12 @@ public class RESTServlet extends HTTPServletBase
         {
             service.acquire();
 
-            final long mills = TIMER_MILLS.getTime();
-
-            final long nanos = TIMER_NANOS.getTime();
+            final NanoTimer timer = new NanoTimer();
 
             final Object object = service.call(context, body);
 
-            final long ndiff = TIMER_NANOS.getTime() - nanos;
+            logger().info(format("calling service (%s) took %s.", bind, timer.toString()));
 
-            final long mdiff = TIMER_MILLS.getTime() - mills;
-
-            if (mdiff < 1)
-            {
-                logger().info(format("calling service (%s) took (%s) nanos.", bind, ndiff));
-            }
-            else
-            {
-                logger().info(format("calling service (%s) took (%s) mills.", bind, mdiff));
-            }
             if (context.isOpen())
             {
                 if (object instanceof IResponseAction)

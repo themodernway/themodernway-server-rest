@@ -33,7 +33,22 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
 
     public RESTServiceSupport()
     {
-        m_ratelimit = RateLimiterFactory.create(getClass())
+        setRateLimit(RateLimiterFactory.create(getClass()))
+    }
+
+    public RESTServiceSupport(double ratelimit)
+    {
+        setRateLimit(ratelimit)
+    }
+
+    protected void setRateLimit(double ratelimit)
+    {
+        setRateLimit(RateLimiterFactory.create(ratelimit))
+    }
+
+    protected void setRateLimit(RateLimiter ratelimit)
+    {
+        m_ratelimit = ratelimit
     }
 
     @Override

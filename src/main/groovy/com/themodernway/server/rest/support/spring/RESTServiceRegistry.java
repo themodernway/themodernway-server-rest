@@ -18,7 +18,6 @@ package com.themodernway.server.rest.support.spring;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +29,7 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.http.HttpMethod;
 
+import com.themodernway.common.api.java.util.CommonOps;
 import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.rest.IRESTService;
 
@@ -127,7 +127,7 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
     @Override
     public List<IRESTService> getRESTServices()
     {
-        return Collections.unmodifiableList(m_services);
+        return CommonOps.toUnmodifiableList(m_services);
     }
 
     @Override
