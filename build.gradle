@@ -44,7 +44,7 @@ sourceCompatibility = 1.8
 
 targetCompatibility = 1.8
 
-version = '1.2.16-RELEASE'
+version = '1.2.17-RELEASE'
 
 group = 'com.themodernway'
 
@@ -150,15 +150,15 @@ def String getProjectCommonName() {
     'TheModernWay Server REST'
 }
 
-def getBuildModuleVersion() {
+def String getBuildModuleVersion() {
     version
 }
 
-def getBuildDate() {
+def String getBuildDate() {
     (new Date()).toString()
 }
 
-def getBuildServerHost() {
+def String getBuildServerHost() {
     try
     {
         InetAddress.getLocalHost().getHostName()
@@ -169,31 +169,31 @@ def getBuildServerHost() {
     }
 }
 
-def getJavaVersion() {
+def String getJavaVersion() {
     System.getProperty('java.version') ?: 'unknown'
 }
 
-def getBuildUser() {
+def String getBuildUser() {
     System.getProperty('user.name') ?: 'unknown'
 }
 
-def getBuildServerBuild() {
+def String getBuildServerBuild() {
     System.getProperty('BUILD_DISPLAY_NAME') ?: 'Command line ' + GradleVersion.current().toString()
 }
 
-def getBuildGITHomeURL() {
+def String getBuildGITHomeURL() {
     'https://github.com/themodernway/' + getProjectArtifactID()
 }
 
-def getBuildGITCommitHash() {
+def String getBuildGITCommitHash() {
     getBuildGITHomeURL() + '/commit/' + Grgit.open(project.file('.')).head().id
 }
 
-def getBuildGITCommitUser() {
+def String getBuildGITCommitUser() {
     Grgit.open(project.file('.')).head().committer.email
 }
 
-def getBuildGITCommitMessage() {
+def String getBuildGITCommitMessage() {
     Grgit.open(project.file('.')).head().shortMessage
 }
 
@@ -235,7 +235,7 @@ tasks.withType(GroovyCompile) {
 }
 
 dependencies {
-    compile(group: 'com.themodernway', name: 'themodernway-server-core', version: '1.2.16-RELEASE')
+    compile(group: 'com.themodernway', name: 'themodernway-server-core', version: '1.2.17-RELEASE')
     testCompile(group: 'log4j', name: 'log4j', version: '1.2.17')
     testCompile(group: 'log4j', name: 'apache-log4j-extras', version:'1.2.17')
     testCompile(group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25')
