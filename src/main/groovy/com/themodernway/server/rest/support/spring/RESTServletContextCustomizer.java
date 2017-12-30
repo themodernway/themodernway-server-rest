@@ -24,6 +24,7 @@ import javax.servlet.ServletContext;
 
 import org.springframework.web.context.WebApplicationContext;
 
+import com.themodernway.server.core.servlet.IServletResponseErrorCodeManager;
 import com.themodernway.server.core.servlet.ISessionIDFromRequestExtractor;
 import com.themodernway.server.core.support.spring.IServletFactory;
 import com.themodernway.server.core.support.spring.IServletFactoryContextCustomizer;
@@ -101,6 +102,12 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
         if (null != extr)
         {
             inst.setSessionIDFromRequestExtractor(extr);
+        }
+        final IServletResponseErrorCodeManager code = customizer.getServletResponseErrorCodeManager();
+
+        if (null != code)
+        {
+            inst.setServletResponseErrorCodeManager(code);
         }
         inst.setTags(getTags());
 

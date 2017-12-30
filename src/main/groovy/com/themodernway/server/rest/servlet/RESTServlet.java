@@ -110,7 +110,7 @@ public class RESTServlet extends HTTPServletBase
         {
             logger().error("empty service path found.");
 
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            sendErrorCode(request, response, HttpServletResponse.SC_NOT_FOUND);
 
             return;
         }
@@ -122,7 +122,7 @@ public class RESTServlet extends HTTPServletBase
             {
                 logger().error(format("service (%s) not type (%s).", bind, type));
 
-                response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                sendErrorCode(request, response, HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
                 return;
             }
@@ -130,7 +130,7 @@ public class RESTServlet extends HTTPServletBase
             {
                 logger().error(format("service or binding not found (%s).", bind));
 
-                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                sendErrorCode(request, response, HttpServletResponse.SC_NOT_FOUND);
 
                 return;
             }
@@ -159,7 +159,7 @@ public class RESTServlet extends HTTPServletBase
             {
                 logger().error(format("service (%s) for tags not found (%s).", bind, toPrintableString(tags)));
 
-                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                sendErrorCode(request, response, HttpServletResponse.SC_NOT_FOUND);
 
                 return;
             }
@@ -168,7 +168,7 @@ public class RESTServlet extends HTTPServletBase
         {
             logger().error(format("service (%s) not type (%s).", bind, type));
 
-            response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            sendErrorCode(request, response, HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
             return;
         }
@@ -192,7 +192,7 @@ public class RESTServlet extends HTTPServletBase
 
             response.addHeader(WWW_AUTHENTICATE, "unauthorized");
 
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            sendErrorCode(request, response, HttpServletResponse.SC_FORBIDDEN);
 
             return;
         }
@@ -206,7 +206,7 @@ public class RESTServlet extends HTTPServletBase
             {
                 logger().error(format("service (%s) type (%s) null body.", bind, type));
 
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                sendErrorCode(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             return;
         }
@@ -228,7 +228,7 @@ public class RESTServlet extends HTTPServletBase
             {
                 if (object instanceof IResponseAction)
                 {
-                    ((IResponseAction) object).call(request, response);
+                    ((IResponseAction) object).call(request, response, getServletResponseErrorCodeManager());
 
                     return;
                 }
@@ -238,7 +238,7 @@ public class RESTServlet extends HTTPServletBase
                 {
                     result = clean(result, true);
                 }
-                writeBODY(HttpServletResponse.SC_OK, context, request, response, result);
+                writeBODY(context, request, response, result);
             }
             else
             {
@@ -249,7 +249,7 @@ public class RESTServlet extends HTTPServletBase
         {
             if (context.isOpen())
             {
-                errorBODY(e.getCode(), context, request, response, e.getReason());
+                sendErrorCode(request, response, e.getCode(), e.getReason());
             }
             else
             {
@@ -262,7 +262,7 @@ public class RESTServlet extends HTTPServletBase
 
             logger().error(format("error calling (%s) uuid (%s).", bind, uuid), e);
 
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, uuid);
+            sendErrorCode(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, uuid);
         }
     }
 
@@ -312,7 +312,7 @@ public class RESTServlet extends HTTPServletBase
                 {
                     logger().error(format("error calling (%s) length (%d) greater than (%d).", bind, leng, size));
 
-                    response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
+                    sendErrorCode(request, response, HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
 
                     return null;
                 }
@@ -326,7 +326,7 @@ public class RESTServlet extends HTTPServletBase
                         {
                             logger().error(format("error calling (%s) length (%d) greater than (%d).", bind, buff.length(), size));
 
-                            response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
+                            sendErrorCode(request, response, HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
 
                             return null;
                         }
@@ -355,12 +355,7 @@ public class RESTServlet extends HTTPServletBase
         return new JSONObject();
     }
 
-    protected void errorBODY(final int code, final IRESTRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String reason) throws IOException
-    {
-        writeBODY(code, context, request, response, new JSONObject("error", new JSONObject("code", code).set("reason", reason)));
-    }
-
-    protected void writeBODY(final int code, final IRESTRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final JSONObject output) throws IOException
+    protected void writeBODY(final IRESTRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final JSONObject output) throws IOException
     {
         doNeverCache(request, response);
 
@@ -402,7 +397,7 @@ public class RESTServlet extends HTTPServletBase
 
             return;
         }
-        response.setStatus(code);
+        response.setStatus(HttpServletResponse.SC_OK);
 
         final PrintWriter stream = response.getWriter();
 
