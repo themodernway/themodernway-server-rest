@@ -220,16 +220,13 @@ public class RESTServlet extends HTTPServletBase
         {
             final IValidationContext context = validator.validate(body);
 
-            if (null != context)
+            if ((null != context) && (false == context.isValid()))
             {
-                if (false == context.isValid())
-                {
-                    logger().error(format("service (%s) type (%s) invalid body (%s).", bind, type, context.getErrorString()));
+                logger().error(format("service (%s) type (%s) invalid body (%s).", bind, type, context.getErrorString()));
 
-                    sendErrorCode(request, response, HttpServletResponse.SC_BAD_REQUEST);
+                sendErrorCode(request, response, HttpServletResponse.SC_BAD_REQUEST);
 
-                    return;
-                }
+                return;
             }
         }
         final IRESTRequestContext context = new RESTRequestContext(service, session, uroles, getServletContext(), request, response, type);
