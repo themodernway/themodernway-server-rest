@@ -22,6 +22,7 @@ import java.util.List;
 import org.springframework.http.HttpMethod;
 
 import com.themodernway.server.core.json.JSONObject;
+import com.themodernway.server.core.json.validation.IJSONValidator;
 import com.themodernway.server.core.limiting.IRateLimited;
 
 public interface IRESTService extends IRateLimited, Closeable
@@ -33,6 +34,8 @@ public interface IRESTService extends IRateLimited, Closeable
     public List<String> getTaggigValues();
 
     public HttpMethod getRequestMethodType();
+
+    public IJSONValidator getValidator();
 
     public Object call(IRESTRequestContext context, JSONObject object) throws Exception;
 }

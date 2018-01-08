@@ -32,6 +32,8 @@ import com.themodernway.server.core.io.IO;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
 import com.themodernway.server.core.json.binder.BinderType;
+import com.themodernway.server.core.json.validation.IJSONValidator;
+import com.themodernway.server.core.json.validation.IValidationContext;
 import com.themodernway.server.core.security.IAuthorizationResult;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.security.session.IServerSessionHelper;
@@ -212,6 +214,24 @@ public class RESTServlet extends HTTPServletBase
         }
         body = clean(body, false);
 
+        final IJSONValidator validator = service.getValidator();
+
+        if (null != validator)
+        {
+            final IValidationContext context = validator.validate(body);
+
+            if (null != context)
+            {
+                if (false == context.isValid())
+                {
+                    logger().error(format("service (%s) type (%s) invalid body (%s).", bind, type, context.getErrorString()));
+
+                    sendErrorCode(request, response, HttpServletResponse.SC_BAD_REQUEST);
+
+                    return;
+                }
+            }
+        }
         final IRESTRequestContext context = new RESTRequestContext(service, session, uroles, getServletContext(), request, response, type);
 
         try

@@ -21,6 +21,7 @@ import org.springframework.http.HttpMethod
 import com.google.common.util.concurrent.RateLimiter
 import com.themodernway.server.core.ICoreCommon
 import com.themodernway.server.core.file.FileAndPathUtils
+import com.themodernway.server.core.json.validation.IJSONValidator
 import com.themodernway.server.rest.support.RESTSupport
 
 import groovy.transform.CompileStatic
@@ -106,5 +107,10 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
     public DefaultResponseActions responses()
     {
         new DefaultResponseActions()
+    }
+
+    public IJSONValidator getValidator()
+    {
+        null
     }
 }
