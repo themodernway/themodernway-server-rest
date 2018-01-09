@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, The Modern Way. All rights reserved.
+ * Copyright (c) 2018, The Modern Way. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ sourceCompatibility = 1.8
 
 targetCompatibility = 1.8
 
-version = '1.2.24-RELEASE'
+version = '1.2.25-RELEASE'
 
 group = 'com.themodernway'
 
@@ -78,7 +78,7 @@ task doJavaDocs(type: Groovydoc) {
     classpath = sourceSets.main.runtimeClasspath
     destinationDir = file("${buildDir}/docs/javadoc")
     docTitle = "${getProjectCommonName()}"
-    footer = "<small><a href=\"${getBuildGITHomeURL()}\" target=\"_blank\">${getProjectCommonName()} - &copy; 2017, 2018</a> - <a href=\"${getBuildGITCommitHash()}\" target=\"_blank\">${getBuildModuleVersion()}</a> - <a href=\"mailto:deansjones@gmail.com\">Author: Dean S. Jones</a></small>"
+    footer = "<small><a href=\"${getBuildGITHomeURL()}\" target=\"_blank\">${getProjectCommonName()} - &copy; 2018</a> - <a href=\"${getBuildGITCommitHash()}\" target=\"_blank\">${getBuildModuleVersion()}</a> - <a href=\"mailto:deansjones@gmail.com\">Author: Dean S. Jones</a></small>"
     includes = [
         'com/themodernway/server/rest/**'
     ]
@@ -126,8 +126,7 @@ dependencyCheck {
     suppressionFile = file('config/cve/suppress.xml')
 }
 
-task checkCodeQuality { doLast { println ':checkCodeQuality-done'
-    } }
+task checkCodeQuality { doLast { println ':checkCodeQuality-done' } }
 
 checkCodeQuality.dependsOn checkstyleMain,pmdMain,findbugsMain,dependencyCheckAnalyze
 
@@ -207,8 +206,7 @@ repositories {
     maven { url "${sonatype_snapshotURL}" }
 }
 
-task codeCoverage { doLast { println ':codeCoverage-done'
-    } }
+task codeCoverage { doLast { println ':codeCoverage-done' } }
 
 codeCoverage.dependsOn jacocoTestReport
 
@@ -237,7 +235,7 @@ tasks.withType(GroovyCompile) {
 }
 
 dependencies {
-    compile(group: 'com.themodernway', name: 'themodernway-server-core', version: '1.2.24-RELEASE')
+    compile(group: 'com.themodernway', name: 'themodernway-server-core', version: '1.2.25-RELEASE')
     testCompile(group: 'log4j', name: 'log4j', version: '1.2.17')
     testCompile(group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25')
     testCompile(group: 'org.slf4j', name: 'jul-to-slf4j', version: '1.7.25')
