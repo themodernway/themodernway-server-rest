@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -31,11 +31,12 @@ import org.springframework.http.HttpMethod;
 
 import com.themodernway.common.api.java.util.CommonOps;
 import com.themodernway.server.core.file.FileAndPathUtils;
+import com.themodernway.server.core.logging.LoggingOps;
 import com.themodernway.server.rest.IRESTService;
 
 public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAware
 {
-    private static final Logger                                              logger     = Logger.getLogger(RESTServiceRegistry.class);
+    private static final Logger                                              logger     = LoggingOps.LOGGER(RESTServiceRegistry.class);
 
     private final HashSet<String>                                            m_valpaths = new HashSet<String>();
 
