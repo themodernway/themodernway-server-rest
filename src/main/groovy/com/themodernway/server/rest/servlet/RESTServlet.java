@@ -422,7 +422,14 @@ public class RESTServlet extends HTTPServletBase
 
         try
         {
-            BinderType.forContentType(type).getBinder().setStrict(isStrict(request)).send(stream, output);
+            if (isStrict(request))
+            {
+                BinderType.forContentType(type).getBinder().setStrict().send(stream, output);
+            }
+            else
+            {
+                BinderType.forContentType(type).getBinder().send(stream, output);
+            }
         }
         catch (final ParserException e)
         {
