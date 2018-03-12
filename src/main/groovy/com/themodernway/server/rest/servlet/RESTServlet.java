@@ -34,12 +34,14 @@ import com.themodernway.server.core.json.ParserException;
 import com.themodernway.server.core.json.binder.BinderType;
 import com.themodernway.server.core.json.validation.IJSONValidator;
 import com.themodernway.server.core.json.validation.IValidationContext;
+import com.themodernway.server.core.logging.LoggingOps;
 import com.themodernway.server.core.security.IAuthorizationResult;
 import com.themodernway.server.core.security.session.IServerSession;
-import com.themodernway.server.core.security.session.IServerSessionHelper;
 import com.themodernway.server.core.servlet.DefaultHeaderNameSessionIDFromRequestExtractor;
 import com.themodernway.server.core.servlet.HTTPServletBase;
 import com.themodernway.server.core.servlet.IResponseAction;
+import com.themodernway.server.core.servlet.IServletResponseErrorCodeManager;
+import com.themodernway.server.core.servlet.ISessionIDFromRequestExtractor;
 import com.themodernway.server.rest.IRESTRequestContext;
 import com.themodernway.server.rest.IRESTService;
 import com.themodernway.server.rest.RESTException;
@@ -55,13 +57,9 @@ public class RESTServlet extends HTTPServletBase
 
     private List<String>      m_tags           = arrayList();
 
-    public RESTServlet()
+    public RESTServlet(final double rate, final List<String> role, final IServletResponseErrorCodeManager code, final ISessionIDFromRequestExtractor extr)
     {
-    }
-
-    protected RESTServlet(final double rate)
-    {
-        super(rate);
+        super(rate, role, code, extr);
     }
 
     @Override
@@ -110,8 +108,10 @@ public class RESTServlet extends HTTPServletBase
 
         if (null == bind)
         {
-            logger().error("empty service path found.");
-
+            if (logger().isErrorEnabled())
+            {
+                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "empty service path found.");
+            }
             sendErrorCode(request, response, HttpServletResponse.SC_NOT_FOUND);
 
             return;
@@ -122,16 +122,20 @@ public class RESTServlet extends HTTPServletBase
         {
             if (getRESTContext().isBindingRegistered(bind))
             {
-                logger().error(format("service (%s) not type (%s).", bind, type));
-
+                if (logger().isErrorEnabled())
+                {
+                    logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("service (%s) not type (%s).", bind, type));
+                }
                 sendErrorCode(request, response, HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
                 return;
             }
             else
             {
-                logger().error(format("service or binding not found (%s).", bind));
-
+                if (logger().isErrorEnabled())
+                {
+                    logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("service or binding not found (%s).", bind));
+                }
                 sendErrorCode(request, response, HttpServletResponse.SC_NOT_FOUND);
 
                 return;
@@ -159,8 +163,10 @@ public class RESTServlet extends HTTPServletBase
             }
             if (false == find)
             {
-                logger().error(format("service (%s) for tags not found (%s).", bind, toPrintableString(tags)));
-
+                if (logger().isErrorEnabled())
+                {
+                    logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("service (%s) for tags not found (%s).", bind, toPrintableString(tags)));
+                }
                 sendErrorCode(request, response, HttpServletResponse.SC_NOT_FOUND);
 
                 return;
@@ -168,8 +174,10 @@ public class RESTServlet extends HTTPServletBase
         }
         if (type != service.getRequestMethodType())
         {
-            logger().error(format("service (%s) not type (%s).", bind, type));
-
+            if (logger().isErrorEnabled())
+            {
+                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("service (%s) not type (%s).", bind, type));
+            }
             sendErrorCode(request, response, HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
             return;
@@ -184,14 +192,16 @@ public class RESTServlet extends HTTPServletBase
         }
         if ((null == uroles) || (uroles.isEmpty()))
         {
-            uroles = getDefaultRoles(request);
+            uroles = arrayList();
         }
         final IAuthorizationResult auth = isAuthorized(request, session, service, uroles);
 
         if (false == auth.isAuthorized())
         {
-            logger().error(format("service authorization failed for (%s) type (%s) reason (%s).", bind, type, auth.getText()));
-
+            if (logger().isErrorEnabled())
+            {
+                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("service authorization failed for (%s) type (%s) reason (%s).", bind, type, auth.getText()));
+            }
             response.addHeader(WWW_AUTHENTICATE, "unauthorized");
 
             sendErrorCode(request, response, HttpServletResponse.SC_FORBIDDEN);
@@ -206,8 +216,10 @@ public class RESTServlet extends HTTPServletBase
         {
             if (response.getStatus() == HttpServletResponse.SC_OK)
             {
-                logger().error(format("service (%s) type (%s) null body.", bind, type));
-
+                if (logger().isErrorEnabled())
+                {
+                    logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("service (%s) type (%s) null body.", bind, type));
+                }
                 sendErrorCode(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             return;
@@ -222,8 +234,10 @@ public class RESTServlet extends HTTPServletBase
 
             if ((null != context) && (false == context.isValid()))
             {
-                logger().error(format("service (%s) type (%s) invalid body (%s).", bind, type, context.getErrorString()));
-
+                if (logger().isErrorEnabled())
+                {
+                    logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("service (%s) type (%s) invalid body (%s).", bind, type, context.getErrorString()));
+                }
                 sendErrorCode(request, response, HttpServletResponse.SC_BAD_REQUEST);
 
                 return;
@@ -239,8 +253,10 @@ public class RESTServlet extends HTTPServletBase
 
             final Object object = service.call(context, body);
 
-            logger().info(format("calling service (%s) took %s.", bind, timer.toString()));
-
+            if (logger().isInfoEnabled())
+            {
+                logger().info(LoggingOps.THE_MODERN_WAY_MARKER, format("calling service (%s) took %s.", bind, timer.toString()));
+            }
             if (context.isOpen())
             {
                 if (object instanceof IResponseAction)
@@ -257,9 +273,9 @@ public class RESTServlet extends HTTPServletBase
                 }
                 writeBODY(context, request, response, result);
             }
-            else
+            else if (logger().isErrorEnabled())
             {
-                logger().error(format("calling service (%s) context closed.", bind));
+                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("calling service (%s) context closed.", bind));
             }
         }
         catch (final RESTException e)
@@ -268,17 +284,18 @@ public class RESTServlet extends HTTPServletBase
             {
                 sendErrorCode(request, response, e.getCode(), e.getReason());
             }
-            else
+            else if (logger().isErrorEnabled())
             {
-                logger().error(format("calling service (%s) context closed.", bind));
+                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("calling service (%s) context closed.", bind));
             }
         }
         catch (final Throwable e)
         {
             final String uuid = uuid();
-
-            logger().error(format("error calling (%s) uuid (%s).", bind, uuid), e);
-
+            if (logger().isErrorEnabled())
+            {
+                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) uuid (%s).", bind, uuid), e);
+            }
             sendErrorCode(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, uuid);
         }
     }
@@ -299,11 +316,6 @@ public class RESTServlet extends HTTPServletBase
     protected JSONObject clean(final JSONObject json, final boolean outbound)
     {
         return json;
-    }
-
-    protected List<String> getDefaultRoles(final HttpServletRequest request)
-    {
-        return IServerSessionHelper.SP_DEFAULT_ROLES_LIST;
     }
 
     protected boolean isStrict(final HttpServletRequest request)
@@ -327,8 +339,10 @@ public class RESTServlet extends HTTPServletBase
                 }
                 if ((size > 0L) && (leng > size))
                 {
-                    logger().error(format("error calling (%s) length (%d) greater than (%d).", bind, leng, size));
-
+                    if (logger().isErrorEnabled())
+                    {
+                        logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) length (%d) greater than (%d).", bind, leng, size));
+                    }
                     sendErrorCode(request, response, HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
 
                     return null;
@@ -341,8 +355,10 @@ public class RESTServlet extends HTTPServletBase
 
                         if (buff.length() > size)
                         {
-                            logger().error(format("error calling (%s) length (%d) greater than (%d).", bind, buff.length(), size));
-
+                            if (logger().isErrorEnabled())
+                            {
+                                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) length (%d) greater than (%d).", bind, buff.length(), size));
+                            }
                             sendErrorCode(request, response, HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
 
                             return null;
@@ -353,14 +369,18 @@ public class RESTServlet extends HTTPServletBase
                 }
                 catch (final ParserException e)
                 {
-                    logger().error(format("error calling (%s) ParserException.", bind), e);
-
+                    if (logger().isErrorEnabled())
+                    {
+                        logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) ParserException.", bind), e);
+                    }
                     return null;
                 }
                 catch (final IOException e)
                 {
-                    logger().error(format("error calling (%s) IOException.", bind), e);
-
+                    if (logger().isErrorEnabled())
+                    {
+                        logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) IOException.", bind), e);
+                    }
                     return null;
                 }
             }
@@ -449,9 +469,9 @@ public class RESTServlet extends HTTPServletBase
         {
             m_tags = toUnique(tags);
         }
-        else
+        else if (logger().isErrorEnabled())
         {
-            logger().error("null tags ignored");
+            logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "null tags ignored");
         }
     }
 
@@ -463,9 +483,9 @@ public class RESTServlet extends HTTPServletBase
         {
             m_tags = toUniqueTokenStringList(tags);
         }
-        else
+        else if (logger().isErrorEnabled())
         {
-            logger().error("null or empty tags ignored");
+            logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "null or empty tags ignored");
         }
     }
 

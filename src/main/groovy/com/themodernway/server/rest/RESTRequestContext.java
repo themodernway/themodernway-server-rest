@@ -201,11 +201,6 @@ public class RESTRequestContext implements IRESTRequestContext
     }
 
     @Override
-    public void setMaxContentTypeLength(final int max)
-    {
-    }
-
-    @Override
     public String getName()
     {
         final IServerSession sess = getSession();

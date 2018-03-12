@@ -24,8 +24,7 @@ import javax.servlet.ServletContext;
 
 import org.springframework.web.context.WebApplicationContext;
 
-import com.themodernway.server.core.servlet.IServletResponseErrorCodeManager;
-import com.themodernway.server.core.servlet.ISessionIDFromRequestExtractor;
+import com.themodernway.server.core.logging.LoggingOps;
 import com.themodernway.server.core.support.spring.IServletFactory;
 import com.themodernway.server.core.support.spring.IServletFactoryContextCustomizer;
 import com.themodernway.server.core.support.spring.ServletFactoryContextCustomizer;
@@ -57,9 +56,9 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
         {
             m_tags = toUnique(tags);
         }
-        else
+        else if (logger().isErrorEnabled())
         {
-            logger().error("null tags ignored");
+            logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "null tags ignored");
         }
     }
 
@@ -71,9 +70,9 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
         {
             m_tags = toUniqueTokenStringList(tags);
         }
-        else
+        else if (logger().isErrorEnabled())
         {
-            logger().error("null or empty tags ignored");
+            logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "null or empty tags ignored");
         }
     }
 
@@ -95,25 +94,9 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
     @Override
     public Servlet make(final IServletFactoryContextCustomizer customizer, final ServletContext sc, final WebApplicationContext context)
     {
-        final RESTServlet inst = new RESTServlet();
+        final RESTServlet inst = new RESTServlet(getRateLimit(), getRequiredRoles(), customizer.getServletResponseErrorCodeManager(), customizer.getSessionIDFromRequestExtractor());
 
-        final ISessionIDFromRequestExtractor extr = customizer.getSessionIDFromRequestExtractor();
-
-        if (null != extr)
-        {
-            inst.setSessionIDFromRequestExtractor(extr);
-        }
-        final IServletResponseErrorCodeManager code = customizer.getServletResponseErrorCodeManager();
-
-        if (null != code)
-        {
-            inst.setServletResponseErrorCodeManager(code);
-        }
         inst.setTags(getTags());
-
-        inst.setRateLimit(getRateLimit());
-
-        inst.setRequiredRoles(getRequiredRoles());
 
         inst.setMaxRequestBodySize(getMaxRequestBodySize());
 
