@@ -53,13 +53,29 @@ public class RESTServlet extends HTTPServletBase
 {
     private static final long serialVersionUID = 1L;
 
-    private long              m_size           = 0L;
+    private final long              m_size;
 
-    private List<String>      m_tags           = arrayList();
+    private final List<String>      m_tags;
 
-    public RESTServlet(final double rate, final List<String> role, final IServletResponseErrorCodeManager code, final ISessionIDFromRequestExtractor extr)
+    public RESTServlet(final long size, final List<String> tags, final double rate, final List<String> role, final IServletResponseErrorCodeManager code, final ISessionIDFromRequestExtractor extr)
     {
         super(rate, role, code, extr);
+
+        m_size = size;
+
+        if (null != tags)
+        {
+            m_tags = toUnique(tags);
+        }
+        else
+        {
+            m_tags = arrayList();
+
+            if (logger().isErrorEnabled())
+            {
+            logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "null tags ignored");
+            }
+        }
     }
 
     @Override
@@ -102,7 +118,7 @@ public class RESTServlet extends HTTPServletBase
         doService(request, response, true, HttpMethod.DELETE, null);
     }
 
-    protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject body) throws ServletException, IOException
+    protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject body)
     {
         final String bind = FileAndPathUtils.fixPathBinding(toTrimOrElse(request.getPathInfo(), FileAndPathUtils.SINGLE_SLASH));
 
@@ -141,7 +157,7 @@ public class RESTServlet extends HTTPServletBase
                 return;
             }
         }
-        final List<String> tags = getTags();
+        final List<String> tags = m_tags;
 
         if ((null != tags) && (false == tags.isEmpty()))
         {
@@ -289,9 +305,10 @@ public class RESTServlet extends HTTPServletBase
                 logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("calling service (%s) context closed.", bind));
             }
         }
-        catch (final Throwable e)
+        catch (final Exception e)
         {
             final String uuid = uuid();
+
             if (logger().isErrorEnabled())
             {
                 logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) uuid (%s).", bind, uuid), e);
@@ -335,7 +352,7 @@ public class RESTServlet extends HTTPServletBase
 
                 if (false == (size > 0L))
                 {
-                    size = getMaxRequestBodySize();
+                    size = m_size;
                 }
                 if ((size > 0L) && (leng > size))
                 {
@@ -461,46 +478,5 @@ public class RESTServlet extends HTTPServletBase
     protected IRESTContext getRESTContext()
     {
         return RESTContextInstance.getRESTContextInstance();
-    }
-
-    public void setTags(final List<String> tags)
-    {
-        if (null != tags)
-        {
-            m_tags = toUnique(tags);
-        }
-        else if (logger().isErrorEnabled())
-        {
-            logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "null tags ignored");
-        }
-    }
-
-    public void setTags(String tags)
-    {
-        tags = toTrimOrNull(tags);
-
-        if (null != tags)
-        {
-            m_tags = toUniqueTokenStringList(tags);
-        }
-        else if (logger().isErrorEnabled())
-        {
-            logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "null or empty tags ignored");
-        }
-    }
-
-    public List<String> getTags()
-    {
-        return toUnmodifiableList(m_tags);
-    }
-
-    public void setMaxRequestBodySize(final long size)
-    {
-        m_size = size;
-    }
-
-    public long getMaxRequestBodySize()
-    {
-        return m_size;
     }
 }
