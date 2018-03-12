@@ -37,5 +37,5 @@ public interface IRESTService extends IRateLimited, Closeable
 
     public IJSONValidator getValidator();
 
-    public Object call(IRESTRequestContext context, JSONObject object) throws RESTException;
+    public Object call(IRESTRequestContext context, JSONObject object) throws Exception;
 }
