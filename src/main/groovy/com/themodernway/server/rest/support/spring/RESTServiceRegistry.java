@@ -77,18 +77,18 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
 
                         if (logger.isInfoEnabled())
                         {
-                            logger.info(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService(" + bind + "," + method.name() + ") registered.");
+                            logger.info(LoggingOps.THE_MODERN_WAY_MARKER, String.format("RESTServiceRegistry.addService(%s,%s) registered."), bind, method.name());
                         }
                         return true;
                     }
                     else if (logger.isErrorEnabled())
                     {
-                        logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService(" + bind + "," + method.name() + ") ignored.");
+                        logger.error(LoggingOps.THE_MODERN_WAY_MARKER, String.format("RESTServiceRegistry.addService(%s,%s) ignored."), bind, method.name());
                     }
                 }
                 else if (logger.isErrorEnabled())
                 {
-                    logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService(" + bind + ") null type.");
+                    logger.error(LoggingOps.THE_MODERN_WAY_MARKER, String.format("RESTServiceRegistry.addService(%s) null type."), bind);
                 }
             }
             else if (logger.isErrorEnabled())
