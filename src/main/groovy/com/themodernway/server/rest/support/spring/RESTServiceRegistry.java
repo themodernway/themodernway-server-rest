@@ -75,28 +75,30 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
 
                         find.put(bind, service);
 
-                        logger.info("RESTServiceRegistry.addService(" + bind + "," + method.name() + ") registered.");
-
+                        if (logger.isInfoEnabled())
+                        {
+                            logger.info(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService(" + bind + "," + method.name() + ") registered.");
+                        }
                         return true;
                     }
-                    else
+                    else if (logger.isErrorEnabled())
                     {
-                        logger.error("RESTServiceRegistry.addService(" + bind + "," + method.name() + ") ignored.");
+                        logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService(" + bind + "," + method.name() + ") ignored.");
                     }
                 }
-                else
+                else if (logger.isErrorEnabled())
                 {
-                    logger.error("RESTServiceRegistry.addService(" + bind + ") null type.");
+                    logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService(" + bind + ") null type.");
                 }
             }
-            else
+            else if (logger.isErrorEnabled())
             {
-                logger.error("RESTServiceRegistry.addService() null binding.");
+                logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService() null binding.");
             }
         }
-        else
+        else if (logger.isErrorEnabled())
         {
-            logger.error("RESTServiceRegistry.addService() null service.");
+            logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService() null service.");
         }
         return false;
     }
@@ -156,7 +158,10 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
                 }
                 catch (final Exception e)
                 {
-                    logger.error("RESTServiceRegistry.close().", e);
+                    if (logger.isErrorEnabled())
+                    {
+                        logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.close().", e);
+                    }
                 }
             }
         }

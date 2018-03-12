@@ -317,7 +317,7 @@ public class RESTServlet extends HTTPServletBase
         }
     }
 
-    protected JSONObject json(final Object object) throws Exception
+    protected JSONObject json(final Object object)
     {
         if (null == object)
         {
