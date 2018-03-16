@@ -64,13 +64,13 @@ public interface IRESTRequestContext extends IServletCommonOperations, Closeable
 
     public boolean isPut();
 
-    public Cookie setCookie(String name, String value);
+    public Cookie newCookie(String name, String value);
 
-    public Cookie setCookie(String name, String value, String path);
+    public Cookie newCookie(String name, String value, String path);
 
-    public Cookie setCookie(String name, String value, TimeUnit unit, long duration);
+    public Cookie newCookie(String name, String value, TimeUnit unit, long duration);
 
-    public Cookie setCookie(String name, String value, String path, TimeUnit unit, long duration);
+    public Cookie newCookie(String name, String value, String path, TimeUnit unit, long duration);
 
     public boolean isOpen();
 }

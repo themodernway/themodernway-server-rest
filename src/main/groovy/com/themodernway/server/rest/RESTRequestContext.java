@@ -130,27 +130,39 @@ public class RESTRequestContext implements IRESTRequestContext
     }
 
     @Override
-    public Cookie setCookie(final String name, final String value)
+    public Cookie newCookie(final String name, final String value)
     {
-        return setCookie(name, value, null);
+        return newCookie(name, value, null);
     }
 
     @Override
-    public Cookie setCookie(final String name, final String value, final String path)
+    public Cookie newCookie(final String name, final String value, final String path)
     {
-        return HTTPUtils.setCookie(getServletRequest(), getServletResponse(), name, value, path);
+        final Cookie cookie = HTTPUtils.newCookie(getServletRequest(), name, value, path);
+
+        if (null != cookie)
+        {
+            getServletResponse().addCookie(cookie);
+        }
+        return cookie;
     }
 
     @Override
-    public Cookie setCookie(final String name, final String value, final TimeUnit unit, final long duration)
+    public Cookie newCookie(final String name, final String value, final TimeUnit unit, final long duration)
     {
-        return setCookie(name, value, null, unit, duration);
+        return newCookie(name, value, null, unit, duration);
     }
 
     @Override
-    public Cookie setCookie(final String name, final String value, final String path, final TimeUnit unit, final long duration)
+    public Cookie newCookie(final String name, final String value, final String path, final TimeUnit unit, final long duration)
     {
-        return HTTPUtils.setCookie(getServletRequest(), getServletResponse(), name, value, path, unit, duration);
+        final Cookie cookie = HTTPUtils.newCookie(getServletRequest(), name, value, path, unit, duration);
+
+        if (null != cookie)
+        {
+            getServletResponse().addCookie(cookie);
+        }
+        return cookie;
     }
 
     @Override
