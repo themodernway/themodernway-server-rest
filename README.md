@@ -44,6 +44,12 @@ CVE Dependency Check URL:
 
 http://docs.themodernway.com/documents/reports/themodernway-server-rest-v2/cve/dependency-check-report.html
 
+SonarQube URL:
+
+https://sonarcloud.io/dashboard?id=com.themodernway%3Athemodernway-server-rest
+
+![alt SonarQube](https://sonarcloud.io/api/project_badges/quality_gate?project=com.themodernway%3Athemodernway-server-rest "SonarQube")
+
 License:
 
 Copyright (c) 2018 The Modern Way. All rights reserved.
