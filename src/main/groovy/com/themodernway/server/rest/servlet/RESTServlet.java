@@ -73,7 +73,7 @@ public class RESTServlet extends HTTPServletBase
 
             if (logger().isErrorEnabled())
             {
-            logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "null tags ignored");
+                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "null tags ignored");
             }
         }
     }
@@ -198,7 +198,7 @@ public class RESTServlet extends HTTPServletBase
 
             return;
         }
-        List<String> uroles = arrayList();
+        List<String> uroles = getDefaultRoles();
 
         final IServerSession session = getSession(requireNonNullOrElse(getSessionIDFromRequestExtractor(), DefaultHeaderNameSessionIDFromRequestExtractor.DEFAULT).getSessionID(request));
 
@@ -208,7 +208,7 @@ public class RESTServlet extends HTTPServletBase
         }
         if ((null == uroles) || (uroles.isEmpty()))
         {
-            uroles = arrayList();
+            uroles = getDefaultRoles();
         }
         final IAuthorizationResult auth = isAuthorized(request, session, service, uroles);
 
