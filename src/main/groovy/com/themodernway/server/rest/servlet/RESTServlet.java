@@ -31,7 +31,6 @@ import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.core.io.IO;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
-import com.themodernway.server.core.json.binder.BinderType;
 import com.themodernway.server.core.json.validation.IJSONValidator;
 import com.themodernway.server.core.json.validation.IValidationContext;
 import com.themodernway.server.core.logging.LoggingOps;
@@ -51,11 +50,15 @@ import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
 public class RESTServlet extends HTTPServletBase
 {
-    private static final long serialVersionUID = 1L;
+    private static final long            serialVersionUID = 1L;
 
-    private final long              m_size;
+    private static final RestBinderCache STRICT_CACHE     = new RestBinderCache("strict", true);
 
-    private final List<String>      m_tags;
+    private static final RestBinderCache NORMAL_CACHE     = new RestBinderCache("normal", false);
+
+    private final long                   m_size;
+
+    private final List<String>           m_tags;
 
     public RESTServlet(final long size, final List<String> tags, final double rate, final List<String> role, final IServletResponseErrorCodeManager code, final ISessionIDFromRequestExtractor extr)
     {
@@ -380,9 +383,9 @@ public class RESTServlet extends HTTPServletBase
 
                             return null;
                         }
-                        return BinderType.forContentType(request.getContentType()).getBinder().bindJSON(buff);
+                        return NORMAL_CACHE.get(request.getContentType()).bindJSON(buff);
                     }
-                    return BinderType.forContentType(request.getContentType()).getBinder().bindJSON(request.getReader());
+                    return NORMAL_CACHE.get(request.getContentType()).bindJSON(request.getReader());
                 }
                 catch (final ParserException e)
                 {
@@ -461,11 +464,11 @@ public class RESTServlet extends HTTPServletBase
         {
             if (isStrict(request))
             {
-                BinderType.forContentType(type).getBinder().setStrict().send(stream, output);
+                STRICT_CACHE.get(type).send(stream, output);
             }
             else
             {
-                BinderType.forContentType(type).getBinder().send(stream, output);
+                NORMAL_CACHE.get(type).send(stream, output);
             }
         }
         catch (final ParserException e)
