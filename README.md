@@ -1,6 +1,8 @@
 The Modern Way Server REST
 ======
 
+![<TMW>](http://docs.themodernway.com/tmw4.jpg)
+
 The Modern Way Server REST is a package containing basic server REST support.
 
 https://github.com/themodernway/themodernway-server-rest
