@@ -26,11 +26,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 
+import com.themodernway.common.api.types.ParserException;
 import com.themodernway.server.core.NanoTimer;
 import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.core.io.IO;
 import com.themodernway.server.core.json.JSONObject;
-import com.themodernway.server.core.json.ParserException;
 import com.themodernway.server.core.json.validation.IJSONValidator;
 import com.themodernway.server.core.json.validation.IValidationContext;
 import com.themodernway.server.core.logging.LoggingOps;
