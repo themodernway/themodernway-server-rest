@@ -38,11 +38,11 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
 {
     private static final Logger                                              logger     = LoggingOps.LOGGER(RESTServiceRegistry.class);
 
-    private final HashSet<String>                                            m_valpaths = new HashSet<String>();
+    private final HashSet<String>                                            m_valpaths = new HashSet<>();
 
-    private final ArrayList<IRESTService>                                    m_services = new ArrayList<IRESTService>();
+    private final ArrayList<IRESTService>                                    m_services = new ArrayList<>();
 
-    private final LinkedHashMap<String, LinkedHashMap<String, IRESTService>> m_bindings = new LinkedHashMap<String, LinkedHashMap<String, IRESTService>>();
+    private final LinkedHashMap<String, LinkedHashMap<String, IRESTService>> m_bindings = new LinkedHashMap<>();
 
     public RESTServiceRegistry()
     {

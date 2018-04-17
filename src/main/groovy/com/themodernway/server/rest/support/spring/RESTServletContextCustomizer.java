@@ -29,13 +29,16 @@ import com.themodernway.server.core.servlet.ISessionIDFromRequestExtractor;
 import com.themodernway.server.core.support.spring.IServletFactory;
 import com.themodernway.server.core.support.spring.IServletFactoryContextCustomizer;
 import com.themodernway.server.core.support.spring.ServletFactoryContextCustomizer;
+import com.themodernway.server.rest.servlet.RESTInterceptor;
 import com.themodernway.server.rest.servlet.RESTServlet;
 
 public class RESTServletContextCustomizer extends ServletFactoryContextCustomizer implements IServletFactory
 {
-    private long         m_size = 0L;
+    private long            m_size = 0L;
 
-    private List<String> m_tags = arrayList();
+    private List<String>    m_tags = arrayList();
+
+    private RESTInterceptor m_cept;
 
     public RESTServletContextCustomizer(final String name, final String maps)
     {
@@ -92,6 +95,16 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
         return m_size;
     }
 
+    public void setRESTInterceptor(final RESTInterceptor cept)
+    {
+        m_cept = cept;
+    }
+
+    public RESTInterceptor getRESTInterceptor()
+    {
+        return m_cept;
+    }
+
     @Override
     public Servlet make(final IServletFactoryContextCustomizer customizer, final ServletContext sc, final WebApplicationContext context)
     {
@@ -117,6 +130,12 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
 
         inst.setMaxRequestBodySize(getMaxRequestBodySize());
 
+        final RESTInterceptor cept = getRESTInterceptor();
+
+        if (null != cept)
+        {
+            inst.setRESTInterceptor(cept);
+        }
         return inst;
     }
 }

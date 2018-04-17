@@ -31,7 +31,6 @@ import com.themodernway.server.core.file.FileAndPathUtils;
 import com.themodernway.server.core.io.IO;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.ParserException;
-import com.themodernway.server.core.json.binder.BinderType;
 import com.themodernway.server.core.json.validation.IJSONValidator;
 import com.themodernway.server.core.json.validation.IValidationContext;
 import com.themodernway.server.core.security.IAuthorizationResult;
@@ -49,11 +48,17 @@ import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
 public class RESTServlet extends HTTPServletBase
 {
-    private static final long serialVersionUID = 1L;
+    private static final long              serialVersionUID = 1L;
 
-    private long              m_size           = 0L;
+    protected static final RESTBinderCache STRICT_CACHE     = new RESTBinderCache("strict", true);
 
-    private List<String>      m_tags           = arrayList();
+    protected static final RESTBinderCache NORMAL_CACHE     = new RESTBinderCache("normal", false);
+
+    private long                           m_size           = 0L;
+
+    private List<String>                   m_tags           = arrayList();
+
+    private RESTInterceptor                m_cept;
 
     public RESTServlet()
     {
@@ -67,11 +72,22 @@ public class RESTServlet extends HTTPServletBase
     @Override
     public void doHead(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
+        final RESTInterceptor intercept = getRESTInterceptor();
+
+        if (null != intercept)
+        {
+            intercept.before(request, response, HttpMethod.HEAD, null);
+        }
         doNeverCache(request, response);
 
         response.setContentLengthLong(0L);
 
         response.setStatus(HttpServletResponse.SC_OK);
+
+        if (null != intercept)
+        {
+            intercept.finish(request, response, HttpMethod.HEAD, null);
+        }
     }
 
     @Override
@@ -214,6 +230,12 @@ public class RESTServlet extends HTTPServletBase
         }
         body = clean(body, false);
 
+        final RESTInterceptor intercept = getRESTInterceptor();
+
+        if (null != intercept)
+        {
+            intercept.before(request, response, type, body);
+        }
         final IJSONValidator validator = service.getValidator();
 
         if (null != validator)
@@ -254,6 +276,10 @@ public class RESTServlet extends HTTPServletBase
                 if (null != result)
                 {
                     result = clean(result, true);
+                }
+                if (null != intercept)
+                {
+                    intercept.finish(request, response, type, result);
                 }
                 writeBODY(context, request, response, result);
             }
@@ -347,9 +373,9 @@ public class RESTServlet extends HTTPServletBase
 
                             return null;
                         }
-                        return BinderType.forContentType(request.getContentType()).getBinder().bindJSON(buff);
+                        return NORMAL_CACHE.get(request.getContentType()).bindJSON(buff);
                     }
-                    return BinderType.forContentType(request.getContentType()).getBinder().bindJSON(request.getReader());
+                    return NORMAL_CACHE.get(request.getContentType()).bindJSON(request.getReader());
                 }
                 catch (final ParserException e)
                 {
@@ -422,7 +448,14 @@ public class RESTServlet extends HTTPServletBase
 
         try
         {
-            BinderType.forContentType(type).getBinder().setStrict(isStrict(request)).send(stream, output);
+            if (isStrict(request))
+            {
+                STRICT_CACHE.get(type).send(stream, output);
+            }
+            else
+            {
+                NORMAL_CACHE.get(type).send(stream, output);
+            }
         }
         catch (final ParserException e)
         {
@@ -434,6 +467,16 @@ public class RESTServlet extends HTTPServletBase
     protected IRESTContext getRESTContext()
     {
         return RESTContextInstance.getRESTContextInstance();
+    }
+
+    public void setRESTInterceptor(final RESTInterceptor cept)
+    {
+        m_cept = cept;
+    }
+
+    public RESTInterceptor getRESTInterceptor()
+    {
+        return m_cept;
     }
 
     public void setTags(final List<String> tags)
