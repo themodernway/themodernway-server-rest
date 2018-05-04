@@ -39,10 +39,12 @@ import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.servlet.DefaultHeaderNameSessionIDFromRequestExtractor;
 import com.themodernway.server.core.servlet.HTTPServletBase;
 import com.themodernway.server.core.servlet.IResponseAction;
+import com.themodernway.server.core.servlet.IServletExceptionHandler;
 import com.themodernway.server.core.servlet.IServletResponseErrorCodeManager;
 import com.themodernway.server.core.servlet.ISessionIDFromRequestExtractor;
 import com.themodernway.server.rest.IRESTRequestContext;
 import com.themodernway.server.rest.IRESTService;
+import com.themodernway.server.rest.RESTErrorStateException;
 import com.themodernway.server.rest.RESTException;
 import com.themodernway.server.rest.RESTRequestContext;
 import com.themodernway.server.rest.support.spring.IRESTContext;
@@ -52,17 +54,17 @@ public class RESTServlet extends HTTPServletBase
 {
     private static final long            serialVersionUID = 1L;
 
-    private static final RestBinderCache STRICT_CACHE     = new RestBinderCache("strict", true);
+    private static final RESTBinderCache STRICT_CACHE     = new RESTBinderCache("strict", true);
 
-    private static final RestBinderCache NORMAL_CACHE     = new RestBinderCache("normal", false);
+    private static final RESTBinderCache NORMAL_CACHE     = new RESTBinderCache("normal", false);
 
     private final long                   m_size;
 
     private final List<String>           m_tags;
 
-    public RESTServlet(final long size, final List<String> tags, final double rate, final List<String> role, final IServletResponseErrorCodeManager code, final ISessionIDFromRequestExtractor extr)
+    public RESTServlet(final long size, final List<String> tags, final double rate, final List<String> role, final IServletResponseErrorCodeManager code, final ISessionIDFromRequestExtractor extr, final IServletExceptionHandler excp)
     {
-        super(rate, role, code, extr);
+        super(rate, role, code, extr, excp);
 
         m_size = size;
 
@@ -166,7 +168,7 @@ public class RESTServlet extends HTTPServletBase
         {
             boolean find = false;
 
-            final List<String> vals = service.getTaggigValues();
+            final List<String> vals = service.getTaggingValues();
 
             if (null != vals)
             {
@@ -270,7 +272,7 @@ public class RESTServlet extends HTTPServletBase
 
             final NanoTimer timer = new NanoTimer();
 
-            final Object object = service.call(context, body);
+            final Object object = service.exec(context, body);
 
             if (logger().isInfoEnabled())
             {
@@ -299,24 +301,50 @@ public class RESTServlet extends HTTPServletBase
         }
         catch (final RESTException e)
         {
-            if (context.isOpen())
+            final IServletExceptionHandler handler = getServletExceptionHandler();
+
+            if ((null == handler) || (false == handler.handle(request, response, getServletResponseErrorCodeManagerOrDefault(), e)))
             {
-                sendErrorCode(request, response, e.getCode(), e.getReason());
+                if (logger().isErrorEnabled())
+                {
+                    logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "captured overall exception for security.", e);
+                }
+                if (context.isOpen())
+                {
+                    sendErrorCode(request, response, e.getCode(), e.getReason());
+                }
             }
-            else if (logger().isErrorEnabled())
+        }
+        catch (final RESTErrorStateException e)
+        {
+            final IServletExceptionHandler handler = getServletExceptionHandler();
+
+            if ((null == handler) || (false == handler.handle(request, response, getServletResponseErrorCodeManagerOrDefault(), e)))
             {
-                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("calling service (%s) context closed.", bind));
+                if (logger().isErrorEnabled())
+                {
+                    logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) message (%s) state (%s).", bind, e.getMessage(), e.getState().toString()), e);
+                }
+                if (context.isOpen())
+                {
+                    sendErrorCode(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+                }
             }
         }
         catch (final Exception e)
         {
-            final String uuid = uuid();
+            final IServletExceptionHandler handler = getServletExceptionHandler();
 
-            if (logger().isErrorEnabled())
+            if ((null == handler) || (false == handler.handle(request, response, getServletResponseErrorCodeManagerOrDefault(), e)))
             {
-                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) uuid (%s).", bind, uuid), e);
+                final String uuid = uuid();
+
+                if (logger().isErrorEnabled())
+                {
+                    logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) uuid (%s).", bind, uuid), e);
+                }
+                sendErrorCode(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, uuid);
             }
-            sendErrorCode(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, uuid);
         }
     }
 
@@ -389,7 +417,9 @@ public class RESTServlet extends HTTPServletBase
                 }
                 catch (final ParserException e)
                 {
-                    if (logger().isErrorEnabled())
+                    final IServletExceptionHandler handler = getServletExceptionHandler();
+
+                    if (((null == handler) || (false == handler.handle(request, response, getServletResponseErrorCodeManagerOrDefault(), e))) && (logger().isErrorEnabled()))
                     {
                         logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) ParserException.", bind), e);
                     }
@@ -397,7 +427,9 @@ public class RESTServlet extends HTTPServletBase
                 }
                 catch (final IOException e)
                 {
-                    if (logger().isErrorEnabled())
+                    final IServletExceptionHandler handler = getServletExceptionHandler();
+
+                    if (((null == handler) || (false == handler.handle(request, response, getServletResponseErrorCodeManagerOrDefault(), e))) && (logger().isErrorEnabled()))
                     {
                         logger().error(LoggingOps.THE_MODERN_WAY_MARKER, format("error calling (%s) IOException.", bind), e);
                     }

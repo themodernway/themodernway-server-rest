@@ -18,6 +18,7 @@ package com.themodernway.server.rest;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,9 +29,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 
-import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.servlet.HTTPUtils;
+import com.themodernway.server.core.support.spring.network.HTTPHeaders;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
@@ -100,6 +101,24 @@ public class RESTRequestContext implements IRESTRequestContext
     }
 
     @Override
+    public boolean isPatch()
+    {
+        return (HttpMethod.PATCH == getRequestType());
+    }
+
+    @Override
+    public boolean isOptions()
+    {
+        return (HttpMethod.OPTIONS == getRequestType());
+    }
+
+    @Override
+    public boolean isTrace()
+    {
+        return (HttpMethod.TRACE == getRequestType());
+    }
+
+    @Override
     public HttpMethod getRequestType()
     {
         return m_reqtype;
@@ -166,15 +185,23 @@ public class RESTRequestContext implements IRESTRequestContext
     }
 
     @Override
-    public JSONObject getJSONHeaders()
+    public HTTPHeaders getHeaders()
     {
-        return getJSONHeadersFromRequest(getServletRequest());
+        return new HTTPHeaders(getServletRequest());
     }
 
     @Override
-    public JSONObject getJSONParameters()
+    public IRESTRequestContext setHeaders(final HTTPHeaders headers)
     {
-        return getJSONParametersFromRequest(getServletRequest());
+        headers.setHttpServletResponse(getServletResponse());
+
+        return this;
+    }
+
+    @Override
+    public Map<String, String> getParameters()
+    {
+        return getParametersFromRequest(getServletRequest());
     }
 
     @Override

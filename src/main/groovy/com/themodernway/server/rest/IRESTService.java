@@ -31,11 +31,17 @@ public interface IRESTService extends IRateLimited, Closeable
 
     public long getMaxRequestBodySize();
 
-    public List<String> getTaggigValues();
+    public List<String> getTaggingValues();
 
     public HttpMethod getRequestMethodType();
 
     public IJSONValidator getValidator();
 
     public Object call(IRESTRequestContext context, JSONObject object) throws Exception;
+
+    public Object exec(IRESTRequestContext context, JSONObject object) throws Exception;
+
+    public boolean init(IRESTRequestContext context, JSONObject object) throws Exception;
+
+    public boolean done(IRESTRequestContext context, JSONObject object, Object answer) throws Exception;
 }

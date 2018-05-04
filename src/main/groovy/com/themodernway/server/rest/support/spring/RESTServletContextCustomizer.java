@@ -94,6 +94,6 @@ public class RESTServletContextCustomizer extends ServletFactoryContextCustomize
     @Override
     public Servlet make(final IServletFactoryContextCustomizer customizer, final ServletContext sc, final WebApplicationContext context)
     {
-        return new RESTServlet(getMaxRequestBodySize(), getTags(), getRateLimit(), getRequiredRoles(), customizer.getServletResponseErrorCodeManager(), customizer.getSessionIDFromRequestExtractor());
+        return new RESTServlet(getMaxRequestBodySize(), getTags(), getRateLimit(), getRequiredRoles(), customizer.getServletResponseErrorCodeManager(), customizer.getSessionIDFromRequestExtractor(), customizer.getServletExceptionHandler());
     }
 }

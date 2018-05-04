@@ -31,12 +31,13 @@ import org.springframework.http.HttpMethod;
 
 import com.themodernway.common.api.java.util.CommonOps;
 import com.themodernway.server.core.file.FileAndPathUtils;
+import com.themodernway.server.core.logging.IHasLogging;
 import com.themodernway.server.core.logging.LoggingOps;
 import com.themodernway.server.rest.IRESTService;
 
-public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAware
+public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAware, IHasLogging
 {
-    private static final Logger                                              logger     = LoggingOps.getLogger(RESTServiceRegistry.class);
+    private final Logger                                                     m_logger   = LoggingOps.getLogger(getClass());
 
     private final HashSet<String>                                            m_valpaths = new HashSet<>();
 
@@ -75,30 +76,30 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
 
                         find.put(bind, service);
 
-                        if (logger.isInfoEnabled())
+                        if (logger().isInfoEnabled())
                         {
-                            logger.info(LoggingOps.THE_MODERN_WAY_MARKER, String.format("RESTServiceRegistry.addService(%s,%s) registered.", bind, method.name()));
+                            logger().info(LoggingOps.THE_MODERN_WAY_MARKER, String.format("RESTServiceRegistry.addService(%s,%s) registered.", bind, method.name()));
                         }
                         return true;
                     }
-                    else if (logger.isErrorEnabled())
+                    else if (logger().isErrorEnabled())
                     {
-                        logger.error(LoggingOps.THE_MODERN_WAY_MARKER, String.format("RESTServiceRegistry.addService(%s,%s) ignored.", bind, method.name()));
+                        logger().error(LoggingOps.THE_MODERN_WAY_MARKER, String.format("RESTServiceRegistry.addService(%s,%s) ignored.", bind, method.name()));
                     }
                 }
-                else if (logger.isErrorEnabled())
+                else if (logger().isErrorEnabled())
                 {
-                    logger.error(LoggingOps.THE_MODERN_WAY_MARKER, String.format("RESTServiceRegistry.addService(%s) null type.", bind));
+                    logger().error(LoggingOps.THE_MODERN_WAY_MARKER, String.format("RESTServiceRegistry.addService(%s) null type.", bind));
                 }
             }
-            else if (logger.isErrorEnabled())
+            else if (logger().isErrorEnabled())
             {
-                logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService() null binding.");
+                logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService() null binding.");
             }
         }
-        else if (logger.isErrorEnabled())
+        else if (logger().isErrorEnabled())
         {
-            logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService() null service.");
+            logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.addService() null service.");
         }
         return false;
     }
@@ -158,12 +159,18 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
                 }
                 catch (final Exception e)
                 {
-                    if (logger.isErrorEnabled())
+                    if (logger().isErrorEnabled())
                     {
-                        logger.error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.close().", e);
+                        logger().error(LoggingOps.THE_MODERN_WAY_MARKER, "RESTServiceRegistry.close().", e);
                     }
                 }
             }
         }
+    }
+
+    @Override
+    public Logger logger()
+    {
+        return m_logger;
     }
 }

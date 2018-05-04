@@ -18,6 +18,7 @@ package com.themodernway.server.rest;
 
 import java.io.Closeable;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContext;
@@ -27,9 +28,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 
-import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.servlet.IServletCommonOperations;
+import com.themodernway.server.core.support.spring.network.HTTPHeaders;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 
 public interface IRESTRequestContext extends IServletCommonOperations, Closeable
@@ -38,9 +39,11 @@ public interface IRESTRequestContext extends IServletCommonOperations, Closeable
 
     public IServerSession getSession();
 
-    public JSONObject getJSONHeaders();
+    public HTTPHeaders getHeaders();
 
-    public JSONObject getJSONParameters();
+    public IRESTRequestContext setHeaders(HTTPHeaders headers);
+
+    public Map<String, String> getParameters();
 
     public HttpMethod getRequestType();
 
@@ -63,6 +66,12 @@ public interface IRESTRequestContext extends IServletCommonOperations, Closeable
     public boolean isPost();
 
     public boolean isPut();
+
+    public boolean isPatch();
+
+    public boolean isOptions();
+
+    public boolean isTrace();
 
     public Cookie newCookie(String name, String value);
 

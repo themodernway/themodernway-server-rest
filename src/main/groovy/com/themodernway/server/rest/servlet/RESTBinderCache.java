@@ -22,21 +22,25 @@ import com.themodernway.server.core.cache.AbstractConcurrentCache;
 import com.themodernway.server.core.json.binder.BinderType;
 import com.themodernway.server.core.json.binder.IBinder;
 
-public class RestBinderCache extends AbstractConcurrentCache<IBinder>
+public class RESTBinderCache extends AbstractConcurrentCache<IBinder>
 {
     private final boolean m_strict;
 
-    public RestBinderCache(final String name, final boolean strict)
+    public RESTBinderCache(final String name, final boolean strict)
     {
         super(name);
 
         m_strict = strict;
     }
 
+    public boolean isStrict()
+    {
+        return m_strict;
+    }
+
     @Override
     public Function<String, IBinder> getMappingFunction()
     {
-        return type -> (m_strict ? BinderType.forContentType(type).getBinder().setStrict() : BinderType.forContentType(type).getBinder());
+        return type -> (isStrict() ? BinderType.forContentType(type).getBinder().setStrict() : BinderType.forContentType(type).getBinder());
     }
-
 }

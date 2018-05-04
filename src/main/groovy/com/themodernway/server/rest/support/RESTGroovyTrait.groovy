@@ -27,7 +27,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 
 @CompileStatic
-public trait RESTTrait
+public trait RESTGroovyTrait
 {
     @Memoized
     public IRESTContext getRESTContext()

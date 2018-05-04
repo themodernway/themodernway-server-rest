@@ -21,6 +21,7 @@ import org.springframework.http.HttpMethod
 import com.google.common.util.concurrent.RateLimiter
 import com.themodernway.server.core.ICoreCommon
 import com.themodernway.server.core.file.FileAndPathUtils
+import com.themodernway.server.core.json.JSONObject
 import com.themodernway.server.core.json.validation.IJSONValidator
 import com.themodernway.server.rest.support.RESTSupport
 
@@ -32,17 +33,17 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
 {
     private RateLimiter m_ratelimit
 
-    public RESTServiceSupport()
+    protected RESTServiceSupport()
     {
         setRateLimit(RateLimiterFactory.create(getClass()))
     }
 
-    public RESTServiceSupport(double ratelimit)
+    protected RESTServiceSupport(final double ratelimit)
     {
         setRateLimit(ratelimit)
     }
 
-    protected void setRateLimit(double ratelimit)
+    protected void setRateLimit(final double ratelimit)
     {
         setRateLimit(RateLimiterFactory.create(ratelimit))
     }
@@ -61,8 +62,17 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
         }
     }
 
+    @Override
+    public void acquire(final int tics)
+    {
+        if (m_ratelimit)
+        {
+            m_ratelimit.acquire(tics)
+        }
+    }
+
     @Memoized
-    public List<String> getTaggigValues()
+    public List<String> getTaggingValues()
     {
         ICoreCommon.toTaggingValues(this)
     }
@@ -113,5 +123,33 @@ public abstract class RESTServiceSupport extends RESTSupport implements IRESTSer
     public IJSONValidator getValidator()
     {
         null
+    }
+
+    @Override
+    public boolean init(final IRESTRequestContext context, final JSONObject object) throws Exception
+    {
+        true
+    }
+
+    @Override
+    public boolean done(final IRESTRequestContext context, final JSONObject object, final Object answer) throws Exception
+    {
+        true
+    }
+
+    @Override
+    public Object exec(final IRESTRequestContext context, final JSONObject object) throws Exception
+    {
+        if (init(context, object))
+        {
+            final Object answer = call(context, object)
+
+            if (done(context, object, answer))
+            {
+                return answer
+            }
+            throw new RESTErrorStateException(RESTErrorState.DONE)
+        }
+        throw new RESTErrorStateException(RESTErrorState.INIT)
     }
 }

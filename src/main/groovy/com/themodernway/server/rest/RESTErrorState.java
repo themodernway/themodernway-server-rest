@@ -16,19 +16,29 @@
 
 package com.themodernway.server.rest;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.themodernway.common.api.java.util.CommonOps;
+import com.themodernway.common.api.types.IStringValued;
 
-import com.themodernway.common.api.types.FrameworkAnnotation;
-
-@Documented
-@FrameworkAnnotation
-@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE })
-@Retention(RetentionPolicy.RUNTIME)
-public @interface RequestBinding
+public enum RESTErrorState implements IStringValued
 {
-    public String value() default "";
+    INIT("INIT"), DONE("DONE"), EXEC("EXEC"), CALL("CALL"), UNKNOWN("UNKNOWN");
+
+    private final String m_value;
+
+    private RESTErrorState(final String value)
+    {
+        m_value = CommonOps.requireNonNull(value);
+    }
+
+    @Override
+    public final String getValue()
+    {
+        return m_value;
+    }
+
+    @Override
+    public final String toString()
+    {
+        return getValue();
+    }
 }
