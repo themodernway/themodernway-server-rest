@@ -29,13 +29,14 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 
+import com.themodernway.server.core.AbstractCoreLoggingBase;
 import com.themodernway.server.core.security.session.IServerSession;
 import com.themodernway.server.core.servlet.HTTPUtils;
 import com.themodernway.server.core.support.spring.network.HTTPHeaders;
 import com.themodernway.server.rest.support.spring.IRESTContext;
 import com.themodernway.server.rest.support.spring.RESTContextInstance;
 
-public class RESTRequestContext implements IRESTRequestContext
+public class RESTRequestContext extends AbstractCoreLoggingBase implements IRESTRequestContext
 {
     private final AtomicBoolean       m_is_open = new AtomicBoolean(true);
 

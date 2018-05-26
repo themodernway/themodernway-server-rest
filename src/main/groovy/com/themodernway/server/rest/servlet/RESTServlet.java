@@ -28,7 +28,7 @@ import org.springframework.http.HttpMethod;
 
 import com.themodernway.common.api.types.ParserException;
 import com.themodernway.server.core.NanoTimer;
-import com.themodernway.server.core.file.FileAndPathUtils;
+import com.themodernway.server.core.file.FileUtils;
 import com.themodernway.server.core.io.IO;
 import com.themodernway.server.core.json.JSONObject;
 import com.themodernway.server.core.json.validation.IJSONValidator;
@@ -125,7 +125,7 @@ public class RESTServlet extends HTTPServletBase
 
     protected void doService(final HttpServletRequest request, final HttpServletResponse response, final boolean read, final HttpMethod type, JSONObject body)
     {
-        final String bind = FileAndPathUtils.fixPathBinding(toTrimOrElse(request.getPathInfo(), FileAndPathUtils.SINGLE_SLASH));
+        final String bind = FileUtils.fixPathBinding(toTrimOrElse(request.getPathInfo(), FileUtils.SINGLE_SLASH));
 
         if (null == bind)
         {

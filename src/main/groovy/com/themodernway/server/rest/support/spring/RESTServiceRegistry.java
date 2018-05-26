@@ -30,7 +30,7 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.http.HttpMethod;
 
 import com.themodernway.common.api.java.util.CommonOps;
-import com.themodernway.server.core.file.FileAndPathUtils;
+import com.themodernway.server.core.file.FileUtils;
 import com.themodernway.server.core.logging.IHasLogging;
 import com.themodernway.server.core.logging.LoggingOps;
 import com.themodernway.server.rest.IRESTService;
@@ -58,7 +58,7 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
     {
         if (null != service)
         {
-            final String bind = FileAndPathUtils.fixPathBinding(service.getRequestBinding());
+            final String bind = FileUtils.fixPathBinding(service.getRequestBinding());
 
             if (null != bind)
             {
@@ -107,7 +107,7 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
     @Override
     public IRESTService getBinding(String bind, final HttpMethod method)
     {
-        bind = FileAndPathUtils.fixPathBinding(bind);
+        bind = FileUtils.fixPathBinding(bind);
 
         if (null != bind)
         {
@@ -119,7 +119,7 @@ public class RESTServiceRegistry implements IRESTServiceRegistry, BeanFactoryAwa
     @Override
     public boolean isBindingRegistered(String bind)
     {
-        bind = FileAndPathUtils.fixPathBinding(bind);
+        bind = FileUtils.fixPathBinding(bind);
 
         if (null != bind)
         {
